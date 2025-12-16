@@ -28,18 +28,15 @@ export function ChangePasswordPage({ onBack }: ChangePasswordPageProps) {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      {/* Header */}
       <div className="bg-[#658C58] text-white p-6 rounded-t-lg relative">
-        <button onClick={onBack} className="absolute left-4 top-1/2 -translate-y-1/2">
+        <button onClick={onBack} className="p-2 hover:bg-[#31694E] rounded-lg transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-bold text-center">ĐỔI MẬT KHẨU</h1>
       </div>
 
-      {/* Form */}
       <div className="bg-white p-6 space-y-6 rounded-b-lg">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Old Password */}
           <div className="space-y-2">
             <Label htmlFor="old-password" className="text-base font-medium text-gray-900">
               Mật khẩu cũ
@@ -63,7 +60,6 @@ export function ChangePasswordPage({ onBack }: ChangePasswordPageProps) {
             </div>
           </div>
 
-          {/* New Password */}
           <div className="space-y-2">
             <Label htmlFor="new-password" className="text-base font-medium text-gray-900">
               Mật khẩu mới
@@ -87,7 +83,6 @@ export function ChangePasswordPage({ onBack }: ChangePasswordPageProps) {
             </div>
           </div>
 
-          {/* Confirm Password */}
           <div className="space-y-2">
             <Label htmlFor="confirm-password" className="text-base font-medium text-gray-900">
               Nhập lại mật khẩu mới
@@ -111,7 +106,6 @@ export function ChangePasswordPage({ onBack }: ChangePasswordPageProps) {
             </div>
           </div>
 
-          {/* Submit Button */}
           <div className="pt-6">
             <Button
               type="submit"

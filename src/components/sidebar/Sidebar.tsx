@@ -2,24 +2,17 @@
 
 import { Button } from "@/react-web-ui-shadcn/src/components/ui/button"
 import {
-  ChevronDown,
   ChevronLeft,
-  FileText,
-  Settings,
-  Wrench,
-  FolderOpen,
-  CheckCircle,
-  Folder,
-  Users,
   Clock,
   ClipboardList,
   User,
+  Calendar
 } from "lucide-react"
 import { useState } from "react"
 
 interface DashboardSidebarProps {
-  currentPage: "dashboard" | "timekeeping" | "work-explanation"|"personal-account"
-  onPageChange: (page: "dashboard" | "timekeeping" | "work-explanation"|"personal-account") => void
+  currentPage: "dashboard" | "timekeeping" | "work-explanation"|"personal-account"| "attendance"
+  onPageChange: (page: "dashboard" | "timekeeping" | "work-explanation"|"personal-account"| "attendance") => void
 }
 
 export function DashboardSidebar({ currentPage, onPageChange }: DashboardSidebarProps) {
@@ -59,7 +52,7 @@ export function DashboardSidebar({ currentPage, onPageChange }: DashboardSidebar
             >
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm">Timekeeping</span>
+                <span className="text-sm">Chấm công</span>
               </div>
             </button>
 
@@ -71,7 +64,7 @@ export function DashboardSidebar({ currentPage, onPageChange }: DashboardSidebar
             >
               <div className="flex items-center gap-2">
                 <ClipboardList className="w-4 h-4" />
-                <span className="text-sm">Work Explanation</span>
+                <span className="text-sm">Giải trình công</span>
               </div>
             </button>
 
@@ -84,6 +77,18 @@ export function DashboardSidebar({ currentPage, onPageChange }: DashboardSidebar
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span className="text-sm">Cá nhân</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => onPageChange("attendance")}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
+                currentPage === "attendance" ? "bg-primary-foreground/20" : ""
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm">Bảng chấm công</span>
               </div>
             </button>
           </div>
