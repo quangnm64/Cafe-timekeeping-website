@@ -8,6 +8,7 @@ import {
   User,
   Calendar,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface DashboardSidebarProps {
@@ -33,6 +34,7 @@ export function DashboardSidebar({
   currentPage,
   onPageChange,
 }: DashboardSidebarProps) {
+  const router = useRouter();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -70,7 +72,10 @@ export function DashboardSidebar({
             </h3>
 
             <button
-              onClick={() => onPageChange('timekeeping')}
+              onClick={() => {
+                router.push('/time-keeping');
+                onPageChange('timekeeping');
+              }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
                 currentPage === 'timekeeping' ? 'bg-primary-foreground/20' : ''
               }`}
@@ -82,7 +87,10 @@ export function DashboardSidebar({
             </button>
 
             <button
-              onClick={() => onPageChange('work-explanation')}
+              onClick={() => {
+                router.push('/explaination');
+                onPageChange('work-explanation');
+              }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
                 currentPage === 'work-explanation'
                   ? 'bg-primary-foreground/20'
@@ -96,7 +104,10 @@ export function DashboardSidebar({
             </button>
 
             <button
-              onClick={() => onPageChange('personal-account')}
+              onClick={() => {
+                router.push('/profile');
+                onPageChange('personal-account');
+              }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
                 currentPage === 'personal-account'
                   ? 'bg-primary-foreground/20'
@@ -110,7 +121,10 @@ export function DashboardSidebar({
             </button>
 
             <button
-              onClick={() => onPageChange('attendance')}
+              onClick={() => {
+                router.push('/attendance');
+                onPageChange('attendance');
+              }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
                 currentPage === 'attendance' ? 'bg-primary-foreground/20' : ''
               }`}
@@ -122,7 +136,13 @@ export function DashboardSidebar({
             </button>
 
             <button
-              onClick={() => onPageChange('work-schedule')}
+              onClick={() => {
+                {
+                  router.push('/schedule');
+                  onPageChange('work-schedule');
+                }
+                onPageChange('work-schedule');
+              }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
                 currentPage === 'work-schedule'
                   ? 'bg-primary-foreground/20'

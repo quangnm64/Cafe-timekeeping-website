@@ -6,9 +6,11 @@ import { PersonalAccountPage } from '@/modules/personal-profile/components/menu-
 import { TimekeepingPage } from '@/modules/timekeeping/components/form-timekeeping';
 import { WorkExplanationPage } from '@/modules/work-explaination/components/page-work-explaination';
 import { WorkSchedulePage } from '@/modules/work-schedule/components/work-schedule-page';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState<
     | 'dashboard'
     | 'timekeeping'
@@ -19,42 +21,7 @@ export default function DashboardPage() {
   >('dashboard');
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
-      <DashboardSidebar
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-      />
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <DashboardHeader />
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
-          {currentPage === 'dashboard' ? (
-            // <>
-            //   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            //     <div className="lg:col-span-2">
-            //       {/* <BarChartCard /> */}
-            //     </div>
-            //     <div>
-            //       {/* <DonutChartCard /> */}
-            //     </div>
-            //   </div>
-            //   {/* <DataTable /> */}
-            // </>
-            <TimekeepingPage />
-          ) : currentPage === 'timekeeping' ? (
-            <TimekeepingPage />
-          ) : currentPage === 'work-explanation' ? (
-            <WorkExplanationPage />
-          ) : currentPage === 'attendance' ? (
-            <AttendancePage />
-          ) : currentPage === 'work-schedule' ? (
-            <WorkSchedulePage />
-          ) : (
-            <PersonalAccountPage />
-          )}
-        </main>
-        <footer className="bg-[#31694E] text-white py-3 px-6 text-center text-sm">
-          Lorem Ipsum is simply dummy
-        </footer>
-      </div>
+      <main className="flex-1 overflow-y-auto p-6 space-y-6"></main>
     </div>
   );
 }

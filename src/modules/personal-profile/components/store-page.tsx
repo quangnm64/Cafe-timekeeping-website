@@ -1,59 +1,61 @@
-"use client"
+'use client';
 
-import { Button } from "@/react-web-ui-shadcn/src/components/ui/button"
-import { Input } from "@/react-web-ui-shadcn/src/components/ui/input"
-import { ChevronLeft } from "lucide-react"
-import { useState } from "react"
+import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
+import { Input } from '@/react-web-ui-shadcn/src/components/ui/input';
+import { ChevronLeft } from 'lucide-react';
+import { useState } from 'react';
 
 interface Store {
-  id: string
-  code: string
-  name: string
-  address: string
+  id: string;
+  code: string;
+  name: string;
+  address: string;
 }
 
 interface StoreListPageProps {
-  onBack: () => void
+  onBack: () => void;
 }
 
 export function StoreListPage({ onBack }: StoreListPageProps) {
-  const [selectedStore, setSelectedStore] = useState<string>("PL2115")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedStore, setSelectedStore] = useState<string>('PL2115');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Sample store data - replace with actual data
   const stores: Store[] = [
     {
-      id: "PL2115",
-      code: "PL2115",
-      name: "2115",
-      address: "21 Ngõ Gia Tự - KHA",
+      id: 'PL2115',
+      code: 'PL2115',
+      name: '2115',
+      address: '21 Ngõ Gia Tự - KHA',
     },
-  ]
+  ];
 
   const filteredStores = stores.filter(
     (store) =>
       store.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.address.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+      store.address.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleSelectStore = () => {
-    console.log("[v0] Selected store:", selectedStore)
     // Add logic to save selected store
-    onBack()
-  }
+    onBack();
+  };
 
   return (
     <div className="inset-0 bg-gray-100 flex flex-col z-50">
-      {/* Header */}
       <div className="bg-[#658C58] text-white p-4 flex items-center gap-4">
-        <button onClick={onBack} className="p-2 hover:bg-[#31694E] rounded-lg transition-colors">
+        <button
+          onClick={onBack}
+          className="p-2 hover:bg-[#31694E] rounded-lg transition-colors"
+        >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-xl font-bold flex-1 text-center mr-10">DANH SÁCH CỬA HÀNG</h1>
+        <h1 className="text-xl font-bold flex-1 text-center mr-10">
+          DANH SÁCH CỬA HÀNG
+        </h1>
       </div>
 
-      {/* Search Input */}
       <div className="p-4">
         <Input
           type="text"
@@ -64,12 +66,12 @@ export function StoreListPage({ onBack }: StoreListPageProps) {
         />
       </div>
 
-      {/* Store Count */}
       <div className="bg-blue-100 py-3 px-4 text-center">
-        <span className="text-blue-600 font-bold text-lg">TỔNG ({filteredStores.length})</span>
+        <span className="text-blue-600 font-bold text-lg">
+          TỔNG ({filteredStores.length})
+        </span>
       </div>
 
-      {/* Store List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {filteredStores.map((store) => (
           <div
@@ -81,10 +83,14 @@ export function StoreListPage({ onBack }: StoreListPageProps) {
               <div className="flex-shrink-0">
                 <div
                   className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    selectedStore === store.id ? "border-blue-600 bg-blue-600" : "border-gray-300 bg-white"
+                    selectedStore === store.id
+                      ? 'border-blue-600 bg-blue-600'
+                      : 'border-gray-300 bg-white'
                   }`}
                 >
-                  {selectedStore === store.id && <div className="w-3 h-3 rounded-full bg-white" />}
+                  {selectedStore === store.id && (
+                    <div className="w-3 h-3 rounded-full bg-white" />
+                  )}
                 </div>
               </div>
               <div className="flex-1">
@@ -97,7 +103,6 @@ export function StoreListPage({ onBack }: StoreListPageProps) {
         ))}
       </div>
 
-      {/* Select Button */}
       <div className="p-4">
         <Button
           onClick={handleSelectStore}
@@ -107,5 +112,5 @@ export function StoreListPage({ onBack }: StoreListPageProps) {
         </Button>
       </div>
     </div>
-  )
+  );
 }

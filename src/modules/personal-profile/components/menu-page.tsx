@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { ChangePasswordPage } from "@/modules/auth/components/form-reset-password"
-import { Card } from "@/react-web-ui-shadcn/src/components/ui/card"
+import { ChangePasswordPage } from '@/modules/auth/components/form-reset-password';
+import { Card } from '@/react-web-ui-shadcn/src/components/ui/card';
 import {
   FileText,
   User,
@@ -14,50 +14,56 @@ import {
   Key,
   LogOut,
   ChevronRight,
-} from "lucide-react"
-import { useState } from "react"
-import { PersonalProfilePage } from "./menu-profile"
-import { JobDescriptionPage } from "./job-decsription-page"
-import { StoreListPage } from "./store-page"
+} from 'lucide-react';
+import { useState } from 'react';
+import { PersonalProfilePage } from './menu-profile';
+import { JobDescriptionPage } from './job-decsription-page';
+import { StoreListPage } from './store-page';
+import { TeamListPage } from './menu-team';
+import axios from 'axios';
 
 export function PersonalAccountPage() {
-  const [selectedMenu, setSelectedMenu] = useState<string | null>(null)
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [selectedMenu, setSelectedMenu] = useState<string | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const menuItems = [
-    { id: "job-description", label: "Mô tả công việc", icon: FileText },
-    { id: "personal-profile", label: "Hồ sơ cá nhân", icon: User },
-    { id: "my-team", label: "Team của tôi", icon: Users },
-    { id: "work-process", label: "Quá trình công tác", icon: Briefcase },
-    { id: "benefits", label: "Chế độ phúc lợi", icon: Gift },
-    { id: "voucher-coupon", label: "Voucher & Coupon", icon: Ticket },
-    { id: "payslip", label: "Phiếu báo lương", icon: Receipt },
-    { id: "default-store", label: "Cửa hàng mặc định", icon: RotateCcw },
-    { id: "change-password", label: "Đổi mật khẩu", icon: Key },
-    { id: "logout", label: "Đăng xuất", icon: LogOut },
-  ]
+    { id: 'job-description', label: 'Mô tả công việc', icon: FileText },
+    { id: 'personal-profile', label: 'Hồ sơ cá nhân', icon: User },
+    { id: 'my-team', label: 'Team của tôi', icon: Users },
+    { id: 'work-process', label: 'Quá trình công tác', icon: Briefcase },
+    { id: 'benefits', label: 'Chế độ phúc lợi', icon: Gift },
+    { id: 'voucher-coupon', label: 'Voucher & Coupon', icon: Ticket },
+    { id: 'payslip', label: 'Phiếu báo lương', icon: Receipt },
+    { id: 'default-store', label: 'Cửa hàng mặc định', icon: RotateCcw },
+    { id: 'change-password', label: 'Đổi mật khẩu', icon: Key },
+    { id: 'logout', label: 'Đăng xuất', icon: LogOut },
+  ];
   const handleMenuClick = (menuId: string) => {
-    if (menuId === "logout") {
-      setShowLogoutDialog(true)
+    if (menuId === 'logout') {
+      setShowLogoutDialog(true);
     } else {
-      setSelectedMenu(menuId)
+      setSelectedMenu(menuId);
     }
-  }
+  };
 
-  const handleLogout = () => {
-    console.log("User logged out")
-    setShowLogoutDialog(false)
+  const handleLogout = async () => {
+    await axios.post('/api/auth/log-out');
+    window.location.href = '/log-in';
+    setShowLogoutDialog(false);
+  };
+  if (selectedMenu === 'personal-profile') {
+    return <PersonalProfilePage onBack={() => setSelectedMenu(null)} />;
   }
-  if (selectedMenu === "personal-profile") {
-    return <PersonalProfilePage onBack={() => setSelectedMenu(null)} />
+  if (selectedMenu === 'job-description') {
+    return <JobDescriptionPage onBack={() => setSelectedMenu(null)} />;
   }
-  if (selectedMenu === "job-description") {
-    return <JobDescriptionPage onBack={() => setSelectedMenu(null)} />
+  if (selectedMenu === 'change-password') {
+    return <ChangePasswordPage />;
   }
-  if (selectedMenu === "change-password") {
-    return <ChangePasswordPage onBack={() => setSelectedMenu(null)} />
+  if (selectedMenu === 'default-store') {
+    return <StoreListPage onBack={() => setSelectedMenu(null)} />;
   }
-  if (selectedMenu === "default-store") {
-    return <StoreListPage onBack={() => setSelectedMenu(null)} />
+  if (selectedMenu === 'my-team') {
+    return <TeamListPage onBack={() => setSelectedMenu(null)} />;
   }
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -67,7 +73,7 @@ export function PersonalAccountPage() {
 
       <div className="bg-gray-50 p-4 space-y-3 rounded-b-lg">
         {menuItems.map((item) => {
-          const Icon = item.icon
+          const Icon = item.icon;
           return (
             <Card
               key={item.id}
@@ -77,16 +83,20 @@ export function PersonalAccountPage() {
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <Icon className="w-6 h-6 text-gray-700" />
-                  <span className="text-base font-medium text-gray-900">{item.label}</span>
+                  <span className="text-base font-medium text-gray-900">
+                    {item.label}
+                  </span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </div>
             </Card>
-          )
+          );
         })}
       </div>
 
-      <div className="text-center mt-6 text-gray-500 text-sm">Version 1.6.6</div>
+      <div className="text-center mt-6 text-gray-500 text-sm">
+        Version 1.6.6
+      </div>
       {showLogoutDialog && (
         <div className="fixed inset-0 bg-transparent bg-opacity-10 flex items-center justify-center z-50">
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent bg-opacity-50">
@@ -94,16 +104,16 @@ export function PersonalAccountPage() {
               <div className="p-7">
                 <div className="flex justify-center mb-4">
                   <svg
-                    className="w-10 h-10 text-[#658C58]" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
+                    className="w-10 h-10 text-[#658C58]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="2" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
@@ -134,5 +144,5 @@ export function PersonalAccountPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

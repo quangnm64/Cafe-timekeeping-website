@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -20,59 +13,71 @@ model Post {
   createdAt DateTime @default(now())
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-
 model Account {
-  account_id    BigInt   @id @default(autoincrement()) // Primary Key
-  employee_id   BigInt   @unique                     // Mỗi nhân viên chỉ có 1 tài khoản
-  username      String   @unique @db.VarChar(50)     // Tên đăng nhập
-  password_hash String   @db.VarChar(255)            // Password đã hash
-  role_id       BigInt                                   // Quyền truy cập
-  last_login    DateTime? @db.Timestamptz             // Thời gian đăng nhập cuối, nullable
+  account_id  BigInt @id @default(autoincrement())
+  employee_id BigInt @unique
+  role_id     BigInt
 
-  @@map("account") // đặt tên bảng nếu muốn giữ nguyên tên trong DB
+  username      String    @unique @db.VarChar(50)
+  password_hash String    @db.VarChar(255)
+  last_login    DateTime? @db.Timestamptz
+
+  // 🔑 relations
+  employee Employee @relation(fields: [employee_id], references: [employee_id])
+  role     Role     @relation(fields: [role_id], references: [role_id])
+
+  @@map("accounts")
 }
-
 
 model Employee {
-  employee_id   BigInt   @id @map("employee_id")
+  employee_id BigInt @id
 
   full_name     String   @db.VarChar(100)
   gender        String   @db.VarChar(10)
   date_of_birth DateTime @db.Date
 
-  phone         String?  @db.VarChar(20)
-  email         String?  @unique @db.VarChar(100)
-  address       String?  @db.VarChar(255)
+  phone   String? @db.VarChar(20)
+  email   String? @unique @db.VarChar(100)
+  address String? @db.VarChar(255)
 
-  store_id      BigInt
-  position_id   BigInt
+  store_id    BigInt
+  position_id BigInt
 
-  hire_date     DateTime @db.Date
-  status        String   @db.VarChar(20)
+  hire_date DateTime @db.Date
+  status    String   @db.VarChar(20)
 
-  avatar        String?  @db.VarChar(255)
+  avatar String? @db.VarChar(255)
 
-  created_at    DateTime @default(now()) @db.Timestamptz
-  updated_at    DateTime @default(now()) @db.Timestamptz
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @db.Timestamptz
 
-  // Quan hệ 1-1 với Account
-  account       Account?
+  // 🔁 1–1 ngược lại
+  account     Account?
+  attendances Attendance[]
 
   @@map("employees")
 }
 
 model Role {
-  role_id     BigInt  @id @map("role_id")
+  role_id     BigInt  @id
   role_name   String  @unique @db.VarChar(50)
   description String? @db.VarChar(255)
 
-  // 1 Role - nhiều Account
-  accounts    Account[]
+  // 🔁 1–n
+  accounts Account[]
 
   @@map("roles")
 }
 
+model Attendance {
+  attendance_id BigInt    @id @default(autoincrement())
+  employee_id   BigInt
+  work_date     DateTime  @db.Date
+  check_in      DateTime? @db.Timestamptz
+  check_out     DateTime? @db.Timestamptz
+
+  employee Employee @relation(fields: [employee_id], references: [employee_id])
+
+  @@unique([employee_id, work_date])
+  @@map("attendances")
+}

@@ -4,12 +4,26 @@ import { useState, useEffect } from 'react';
 import { Clock, CheckCircle, Calendar } from 'lucide-react';
 import { Card } from '@/react-web-ui-shadcn/src/components/ui/card';
 import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
+import axios from 'axios';
 
 export function TimekeepingPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [checkInTime, setCheckInTime] = useState<Date | null>(null);
   const [checkOutTime, setCheckOutTime] = useState<Date | null>(null);
+  const [address, setAddress] = useState('');
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude, longitude } = pos.coords;
 
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
+
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          setAddress(data.display_name);
+        });
+    });
+  }, []);
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -18,8 +32,11 @@ export function TimekeepingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCheckIn = () => {
+  const handleCheckIn = async () => {
     setCheckInTime(new Date());
+    const now = new Date();
+    await axios.post('/api/timekeeping', now);
+    setCheckInTime(now);
   };
 
   const handleCheckOut = () => {
@@ -45,17 +62,15 @@ export function TimekeepingPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Chấm Công</h1>
-        <p className="text-muted-foreground">
-          Hệ thống quản lý thời gian làm việc
-        </p>
-      </div>
-
       <Card className="p-8 text-center bg-gradient-to-br from-[#658C58] to-[#31694E] text-white">
         <div className="flex items-center justify-center mb-4">
           <Clock className="w-12 h-12 mr-3" />
-          <h2 className="text-2xl font-semibold">Thời Gian Hiện Tại</h2>
+          <h2 className="text-2xl font-semibold">
+            {/* {address === 'Lê Quý Đôn Phường Nha Trang Khánh Hòa'
+              ? 'Đã đúng vị trí'
+              : 'Chưa đúng vị trí'} */}
+            {address}
+          </h2>
         </div>
         <div className="text-6xl font-bold mb-2">{formatTime(currentTime)}</div>
         <div className="text-xl opacity-90">{formatDate(currentTime)}</div>

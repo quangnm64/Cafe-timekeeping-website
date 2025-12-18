@@ -1,19 +1,35 @@
-import prisma from "../../../prisma/prismaClient";
+'use client';
+import React, { useEffect, useState } from 'react';
 
-export default async function Home() {
-  const posts = await prisma.post.findMany();
+function GetCurrentAddress() {
+  const [add, setAdd] = useState('');
+
+  // https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude, longitude } = pos.coords;
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
+
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(
+            data.address.city +
+              ' ' +
+              data.address.road +
+              ' ' +
+              data.address.state
+          );
+        });
+    });
+  }, []);
+
   return (
-    <main style={{ padding: 20 }}>
-      <h1>Posts</h1>
-
-      <ul>
-        {posts.map((p) => (
-          <li key={p.id}>
-            <strong>{p.title}</strong>
-            <p>{p.content}</p>
-          </li>
-        ))}
-      </ul>
-    </main>
+    <>
+      <p>road : {add}</p>
+    </>
   );
 }
+
+export default GetCurrentAddress;

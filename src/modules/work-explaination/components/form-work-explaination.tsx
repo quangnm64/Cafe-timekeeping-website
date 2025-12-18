@@ -1,72 +1,90 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useEffect, useState } from "react"
-import { ArrowLeft, Upload } from "lucide-react"
-import { Button } from "@/react-web-ui-shadcn/src/components/ui/button"
-import { Card } from "@/react-web-ui-shadcn/src/components/ui/card"
-import { Input } from "@/react-web-ui-shadcn/src/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/react-web-ui-shadcn/src/components/ui/select"
-import { Textarea } from "@/react-web-ui-shadcn/src/components/ui/textarea"
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Upload } from 'lucide-react';
+import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
+import { Card } from '@/react-web-ui-shadcn/src/components/ui/card';
+import { Input } from '@/react-web-ui-shadcn/src/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/react-web-ui-shadcn/src/components/ui/select';
+import { Textarea } from '@/react-web-ui-shadcn/src/components/ui/textarea';
 
 type WorkRecord = {
-  id: number
-  location: string
-  employee: string
-  date: string
-  shift: string
-  actualTime1: string
-  actualTime2: string
-  status: string
-}
+  id: number;
+  location: string;
+  employee: string;
+  date: string;
+  shift: string;
+  actualTime1: string;
+  actualTime2: string;
+  status: string;
+};
 
 interface WorkExplanationFormProps {
-  record: WorkRecord
-  onBack: () => void
+  record: WorkRecord;
+  onBack: () => void;
 }
-export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps) {
+export function WorkExplanationForm({
+  record,
+  onBack,
+}: WorkExplanationFormProps) {
   useEffect(() => {
-    const mainContainer = document.querySelector("main")
+    const mainContainer = document.querySelector('main');
     if (mainContainer) {
-      mainContainer.scrollTo({ top: 0, behavior: "smooth" })
+      mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [])
-  const [reason, setReason] = useState("")
-  const [shiftCode, setShiftCode] = useState("")
-  const [startTime, setStartTime] = useState("00:00:00")
-  const [endTime, setEndTime] = useState("00:00:00")
-  const [notes, setNotes] = useState("")
-  const [images, setImages] = useState<File[]>([])
+  }, []);
+  const [reason, setReason] = useState('');
+  const [shiftCode, setShiftCode] = useState('');
+  const [startTime, setStartTime] = useState('00:00:00');
+  const [endTime, setEndTime] = useState('00:00:00');
+  const [notes, setNotes] = useState('');
+  const [images, setImages] = useState<File[]>([]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newImages = Array.from(e.target.files).slice(0, 2 - images.length)
-      setImages([...images, ...newImages])
+      const newImages = Array.from(e.target.files).slice(0, 2 - images.length);
+      setImages([...images, ...newImages]);
     }
-  }
+  };
 
-  const handleSubmit = () => {
-    console.log("[v0] Submitting explanation:", { reason, shiftCode, startTime, endTime, notes, images })
-  }
+  const handleSubmit = () => {};
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="bg-[#658C58] text-white p-4 rounded-lg flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={onBack}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/20"
+            onClick={onBack}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold">GIẢI TRÌNH CÔNG</h1>
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-white/20"
+        >
           <Upload className="h-5 w-5" />
         </Button>
       </div>
 
       <Card className="p-6 shadow-md border-l-4 border-l-[#658C58]">
         <div className="space-y-2">
-          <h3 className="font-bold text-lg text-[#658C58]">{record.location}</h3>
+          <h3 className="font-bold text-lg text-[#658C58]">
+            {record.location}
+          </h3>
           <p className="font-semibold">{record.employee}</p>
           <p className="text-sm">
             <span className="font-medium">Ngày:</span> {record.date}
@@ -75,10 +93,12 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
             <span className="font-medium">Ca:</span> {record.shift}
           </p>
           <p className="text-sm">
-            <span className="font-medium">Công thực tế 1:</span> {record.actualTime1}
+            <span className="font-medium">Công thực tế 1:</span>{' '}
+            {record.actualTime1}
           </p>
           <p className="text-sm">
-            <span className="font-medium">Công thực tế 2:</span> {record.actualTime2}
+            <span className="font-medium">Công thực tế 2:</span>{' '}
+            {record.actualTime2}
           </p>
         </div>
       </Card>
@@ -103,7 +123,9 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Nhập mã ca mới</label>
+            <label className="block text-sm font-medium mb-2">
+              Nhập mã ca mới
+            </label>
             <Input
               type="text"
               placeholder="5430 - 04:00 - 08:00 // 16:00 - 20:00"
@@ -115,7 +137,9 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Giờ bắt đầu 1</label>
+              <label className="block text-sm font-medium mb-2">
+                Giờ bắt đầu 1
+              </label>
               <Input
                 type="text"
                 placeholder="00:00:00"
@@ -125,7 +149,9 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Giờ kết thúc 1</label>
+              <label className="block text-sm font-medium mb-2">
+                Giờ kết thúc 1
+              </label>
               <Input
                 type="text"
                 placeholder="00:00:00"
@@ -147,7 +173,9 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Cập nhật hình ảnh (Tối đa 2 ảnh)</label>
+            <label className="block text-sm font-medium mb-2">
+              Cập nhật hình ảnh (Tối đa 2 ảnh)
+            </label>
             <div className="flex gap-4">
               {images.map((img, idx) => (
                 <div
@@ -155,7 +183,7 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
                   className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center"
                 >
                   <img
-                    src={URL.createObjectURL(img) || "/placeholder.svg"}
+                    src={URL.createObjectURL(img) || '/placeholder.svg'}
                     alt={`Upload ${idx + 1}`}
                     className="w-full h-full object-cover rounded-lg"
                   />
@@ -163,7 +191,13 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
               ))}
               {images.length < 2 && (
                 <label className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-50">
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} multiple />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    multiple
+                  />
                   <Upload className="h-8 w-8 text-gray-400" />
                 </label>
               )}
@@ -179,5 +213,5 @@ export function WorkExplanationForm({ record, onBack }: WorkExplanationFormProps
         </div>
       </Card>
     </div>
-  )
+  );
 }

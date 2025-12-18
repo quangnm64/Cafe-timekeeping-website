@@ -5,13 +5,12 @@ async function main() {
     account_id: BigInt(i + 1),
     employee_id: BigInt(1000 + i),
     username: `user${i + 1}`,
-    password_hash: "Tvx1234@", // password mặc định
+    password_hash: 'Tvx1234@', // password mặc định
     role_id: BigInt((i % 3) + 1),
     last_login: null,
   }));
 
   await prisma.account.createMany({ data: accounts, skipDuplicates: true });
-  console.log("✅ 20 accounts created successfully");
 }
 
 main()
