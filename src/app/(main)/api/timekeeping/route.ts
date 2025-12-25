@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../prisma/prismaClient';
+import { format } from 'date-fns';
+import { error } from 'console';
 
 async function CheckIn() {
   try {
@@ -13,13 +15,17 @@ async function CheckIn() {
 
     const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;
     const user = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const result = await prisma.attendance.create({
+    const workDate = new Date();
+    workDate.setHours(0, 0, 0, 0);
+    const result = await prisma.attendanceLog.create({
       data: {
-        employee_id: BigInt(user.employee_id),
-        work_date: new Date(),
-        check_in: new Date(),
+        userId: user.employee_id,
+        workDate: new Date(format(workDate, 'yyyy-MM-dd')),
+        logType: 'IN',
+        logTime: new Date(),
+        status: 'present',
+        createdAt: new Date(),
+        shiftId: 2,
       },
     });
     if (result) {
@@ -46,39 +52,71 @@ async function CheckOut() {
 
     const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;
     const user = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const att = await prisma.attendance.findFirst({
+    const workDate = new Date();
+    const schedule = await prisma.workSchedule.findFirst({
       where: {
-        employee_id: BigInt(user.employee_id),
-        work_date: {
-          gte: today,
-        },
+        employeeId: parseInt(user.employee_id),
+        workDate: new Date(format(new Date(), 'yyyy-MM-dd')),
       },
     });
-    if (att?.attendance_id) {
-      const result = await prisma.attendance.update({
-        where: {
-          attendance_id: BigInt(att?.attendance_id),
-          employee_id: BigInt(user.employee_id),
-          work_date: {
-            gte: today,
+    if (!schedule) {
+      return NextResponse.json({
+        status: true,
+        message: 'Không tìm thấy lịch làm việc',
+      });
+    }
+    const shift = await prisma.shift.findUnique({
+      where: {
+        // id: schedule?.shiftId,
+        id: 2,
+      },
+    });
+
+    const current = new Date(workDate.getTime() + 7 * 60 * 60 * 1000);
+    const currentMinutes = current.getUTCHours() * 60 + current.getUTCMinutes();
+    const endMinutes = shift?.endTime
+      ? shift.endTime.getUTCHours() * 60 + shift.endTime.getUTCMinutes()
+      : 0;
+
+    const isInLastHour =
+      currentMinutes >= endMinutes + 60 || currentMinutes < endMinutes;
+
+    const result = await prisma.attendanceLog.create({
+      data: {
+        userId: user.employee_id,
+        workDate: new Date(format(workDate, 'yyyy-MM-dd')),
+        logType: 'OUT',
+        logTime: new Date(),
+        status: isInLastHour ? 'Deviation' : 'present',
+        createdAt: new Date(),
+        shiftId: schedule?.shiftId,
+      },
+    });
+    if (isInLastHour) {
+      await prisma.attendanceExplanation
+        .create({
+          data: {
+            employeeId: user.employee_id,
+            attendanceId: result.id,
+            workScheduleId: schedule?.scheduleId ?? 2,
+            approvalStatus: 'NO',
+            explanationStatus: 'NO',
+            submissionStatus: 'NO',
+            createdAt: new Date(),
+            updatedAt: new Date(),
           },
-        },
-        data: {
-          check_out: new Date(),
+        })
+        .catch((error) => console.log(error));
+    }
+    if (result) {
+      return NextResponse.json({
+        status: true,
+        resut: {
+          ...result,
+          attendance_id: result.id.toString(),
+          employee_id: result.userId.toString(),
         },
       });
-      if (result) {
-        return NextResponse.json({
-          status: true,
-          resut: {
-            ...result,
-            attendance_id: result.attendance_id.toString(),
-            employee_id: result.employee_id.toString(),
-          },
-        });
-      }
     }
     return NextResponse.json({
       status: false,
@@ -98,46 +136,19 @@ export async function GET() {
 
     const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;
     const user = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-    const today = new Date('2025-12-19T00:00:00.993Z');
-    const result = await prisma.attendance.findFirst({
+    const result = await prisma.employee.findUnique({
       where: {
-        employee_id: BigInt(user.employee_id),
-        work_date: {
-          gte: today,
-        },
+        id: user.employee_id,
       },
     });
-    if (result) {
-      if (result.check_in) {
-        if (result.check_out) {
-          return NextResponse.json({
-            checkIn: true,
-            checkOut: true,
-            status: true,
-            result: {
-              ...result,
-              attendance_id: result.attendance_id.toString(),
-              employee_id: result.employee_id.toString(),
-            },
-          });
-        }
-        return NextResponse.json({
-          checkIn: true,
-          checkOut: false,
-          status: true,
-          result: {
-            ...result,
-            attendance_id: result.attendance_id.toString(),
-            employee_id: result.employee_id.toString(),
-          },
-        });
-      }
-    }
+    const address = await prisma.store.findUnique({
+      where: {
+        storeId: result?.storeId,
+      },
+    });
 
     return NextResponse.json({
-      checkIn: true,
-      checkOut: false,
-      status: false,
+      store: address,
     });
   } catch (error) {
     console.error('Create attendance error:', error);

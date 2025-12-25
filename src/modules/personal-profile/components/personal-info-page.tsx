@@ -16,37 +16,6 @@ export function PersonalInfoPage() {
     return <div>Loading...</div>;
   }
   if (!user) return <div>Chưa đăng nhập</div>;
-  const personalData = [
-    { label: 'Họ và tên', value: user?.fullName },
-    { label: 'Giới tính', value: 'gioi tinh' },
-    { label: 'Ngày sinh', value: '' },
-    { label: 'Mã số thuế', value: '056204000394' },
-    {
-      label: 'Tên ngân hàng',
-      value: 'NHTMCP KY THUONG VN (TECHCOMBANK) - HOI SO CHINH HA NOI',
-    },
-    { label: 'Số tài khoản', value: '6413193021' },
-    { label: 'Dân tộc', value: 'Kinh' },
-    { label: 'Tôn giáo', value: 'Không' },
-    { label: 'Số CCCD', value: '056204000394' },
-    { label: 'Ngày cấp', value: '10/04/2021' },
-    { label: 'Nơi cấp', value: 'Cục CS Quản lý HC về TTXH' },
-    { label: 'Trình độ học vấn', value: 'Đại học' },
-    { label: 'Chuyên ngành', value: 'Khác' },
-    { label: 'Trường đào tạo', value: 'Khác' },
-    { label: 'Nơi sinh', value: 'Tỉnh Khánh Hòa' },
-    { label: 'Nguyên quán', value: '' },
-    { label: 'Quốc tịch', value: 'Việt Nam' },
-    {
-      label: 'Nơi ĐK hộ khẩu',
-      value: 'Phú Lộc Đông 3, Thị trấn Diên Khánh, Huyện Diên Khánh, Khánh Hòa',
-    },
-    { label: 'Thường trú', value: '' },
-    {
-      label: 'Chỗ ở hiện tại',
-      value: 'Phú Lộc Đông 3, Thị trấn Diên Khánh, Huyện Diên Khánh, Khánh Hòa',
-    },
-  ];
   return (
     <div className="w-full h-full flex flex-col">
       <div className="bg-[#658C58] text-white p-6 flex items-center justify-between">
@@ -77,16 +46,139 @@ export function PersonalInfoPage() {
 
         <Card className="bg-white p-6">
           <div className="space-y-4">
-            {personalData.map((item, index) => (
-              <div key={index} className="grid grid-cols-3 gap-4">
-                <div className="col-span-1 text-gray-600 text-sm">
-                  {item.label}
-                </div>
-                <div className="col-span-2 text-gray-900 text-sm font-medium text-right">
-                  {item.value || '-'}
-                </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Họ và tên</div>
+              <div className="col-span-2 text-gray-900 text-sm font-medium text-right">
+                {user.fullName}
               </div>
-            ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Giới tính</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.gender === 'female'
+                  ? 'Nữ'
+                  : user.gender === 'male'
+                  ? 'Nam'
+                  : '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Ngày sinh</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {new Date(user.dateOfBirth).toLocaleDateString('vi-VN')}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">CCCD</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.citizenIdNumber || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Ngày cấp</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.citizenIdIssueDate
+                  ? new Date(user.citizenIdIssueDate).toLocaleDateString(
+                      'vi-VN'
+                    )
+                  : '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Nơi cấp</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.citizenIdIssuePlace || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Quốc tịch</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.nationality}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Dân tộc</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.ethnicity || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Tôn giáo</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.religion || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Địa chỉ thường trú</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.permanentAddress || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Địa chỉ hiện tại</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.currentAddress || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Trình độ học vấn</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.educationLevel || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Chuyên ngành</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.major || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Trường</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.university || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Ngày vào làm</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {new Date(user.hireDate).toLocaleDateString('vi-VN')}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Ngân hàng</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.bankName || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Số tài khoản</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.bankAccountNumber || '-'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-gray-600 text-sm">Mã số thuế</div>
+              <div className="col-span-2 text-right text-sm font-medium">
+                {user.taxCode || '-'}
+              </div>
+            </div>
           </div>
         </Card>
       </div>

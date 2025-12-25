@@ -1,21 +1,16 @@
 export type LogInDto = {
-  username: string;
+  username: number;
   password: string;
 };
 
-export type Post = {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-};
-
 export type UserInfo = {
-  account_id: string | null;
-  employee_id: string | null;
-  role_id: string | null;
-  username: string | null;
-  last_login: string | Date | null | null;
+  accountId: number | null;
+  employeeId: number | null;
+  roleId: number | null;
+
+  employeeCode: number | null;
+
+  lastLogin: Date | null;
 };
 
 export type ChangePasswordDto = {

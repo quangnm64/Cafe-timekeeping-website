@@ -18,7 +18,8 @@ interface DashboardSidebarProps {
     | 'work-explanation'
     | 'personal-account'
     | 'attendance'
-    | 'work-schedule';
+    | 'work-schedule'
+    | 'explaination-approval';
   onPageChange: (
     page:
       | 'dashboard'
@@ -27,6 +28,7 @@ interface DashboardSidebarProps {
       | 'personal-account'
       | 'attendance'
       | 'work-schedule'
+      | 'explaination-approval'
   ) => void;
 }
 
@@ -35,12 +37,7 @@ export function DashboardSidebar({
   onPageChange,
 }: DashboardSidebarProps) {
   const router = useRouter();
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const toggleMenu = (menu: string) => {
-    setOpenMenus((prev) => ({ ...prev, [menu]: !prev[menu] }));
-  };
 
   return (
     <aside
@@ -102,21 +99,20 @@ export function DashboardSidebar({
                 <span className="text-sm">Giải trình công</span>
               </div>
             </button>
-
             <button
               onClick={() => {
-                router.push('/profile');
-                onPageChange('personal-account');
+                router.push('/explaination-approval');
+                onPageChange('explaination-approval');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'personal-account'
+                currentPage === 'explaination-approval'
                   ? 'bg-primary-foreground/20'
                   : ''
               }`}
             >
               <div className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                <span className="text-sm">Cá nhân</span>
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm">Phê duyệt giải trình công</span>
               </div>
             </button>
 
@@ -152,6 +148,22 @@ export function DashboardSidebar({
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span className="text-sm">Lịch làm việc</span>
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                router.push('/profile');
+                onPageChange('personal-account');
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
+                currentPage === 'personal-account'
+                  ? 'bg-primary-foreground/20'
+                  : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="text-sm">Cá nhân</span>
               </div>
             </button>
           </div>

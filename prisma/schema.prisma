@@ -6,78 +6,238 @@ datasource db {
   provider = "postgresql"
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  createdAt DateTime @default(now())
-}
-
-model Account {
-  account_id  BigInt @id @default(autoincrement())
-  employee_id BigInt @unique
-  role_id     BigInt
-
-  username      String    @unique @db.VarChar(50)
-  password_hash String    @db.VarChar(255)
-  last_login    DateTime? @db.Timestamptz
-
-  // 🔑 relations
-  employee Employee @relation(fields: [employee_id], references: [employee_id])
-  role     Role     @relation(fields: [role_id], references: [role_id])
-
-  @@map("accounts")
-}
-
-model Employee {
-  employee_id BigInt @id
-
-  full_name     String   @db.VarChar(100)
-  gender        String   @db.VarChar(10)
-  date_of_birth DateTime @db.Date
-
-  phone   String? @db.VarChar(20)
-  email   String? @unique @db.VarChar(100)
-  address String? @db.VarChar(255)
-
-  store_id    BigInt
-  position_id BigInt
-
-  hire_date DateTime @db.Date
-  status    String   @db.VarChar(20)
-
-  avatar String? @db.VarChar(255)
-
-  created_at DateTime @default(now()) @db.Timestamptz
-  updated_at DateTime @default(now()) @db.Timestamptz
-
-  // 🔁 1–1 ngược lại
-  account     Account?
-  attendances Attendance[]
-
-  @@map("employees")
-}
-
 model Role {
-  role_id     BigInt  @id
-  role_name   String  @unique @db.VarChar(50)
-  description String? @db.VarChar(255)
+  id   Int    @id @default(autoincrement()) 
+  code String @unique @db.VarChar(30)
+  name String @db.VarChar(100)
 
-  // 🔁 1–n
   accounts Account[]
 
   @@map("roles")
 }
 
-model Attendance {
-  attendance_id BigInt    @id @default(autoincrement())
-  employee_id   BigInt
-  work_date     DateTime  @db.Date
-  check_in      DateTime? @db.Timestamptz
-  check_out     DateTime? @db.Timestamptz
+model Position {
+  positionId   Int     @id @default(autoincrement()) @map("position_id")
+  positionName String  @db.VarChar(150) @map("position_name")
+  code         String  @unique @db.VarChar(50) 
+  hourlyRate   Float   @map("hourly_rate") 
 
-  employee Employee @relation(fields: [employee_id], references: [employee_id])
+  employees Employee[]
 
-  @@unique([employee_id, work_date])
-  @@map("attendances")
+  @@map("positions")
+}
+
+model Shift {
+  id        Int     @id @default(autoincrement())
+  shiftName String  @db.VarChar(100) @map("shift_name")
+  startTime DateTime @db.Time @map("start_time")
+  endTime   DateTime @db.Time @map("end_time")
+
+  schedules    WorkSchedule[]
+  attendances  AttendanceLog[]
+  explanations AttendanceExplanation[]
+
+  @@map("shifts")
+}
+
+model Store {
+  storeId   Int      @id @default(autoincrement()) @map("store_id")
+  storeName String   @db.VarChar(200) @map("store_name")
+  managerId Int?     @unique  @map("manager_id")
+  manager   Employee?  @relation("StoreManager", fields: [managerId], references: [id])
+
+  road    String? @db.VarChar(200)
+  suburb  String? @db.VarChar(150)
+  city    String  @db.VarChar(150)
+  state   String? @db.VarChar(150)
+  country String  @default("Vietnam") @db.VarChar(100)
+
+  latitude  Float? @map("latitude")
+  longitude Float? @map("longitude")
+
+  employees Employee[] @relation("StoreEmployees")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("stores")
+}
+
+model Employee {
+  id Int @id @default(autoincrement())
+
+  fullName    String   @db.VarChar(150) @map("full_name")
+  gender      String?  @db.VarChar(20)
+  dateOfBirth DateTime @map("date_of_birth")
+
+  taxCode String? @unique @map("tax_code")
+
+  bankName          String? @db.VarChar(150) @map("bank_name")
+  bankAccountNumber String? @db.VarChar(30) @map("bank_account_number")
+
+  ethnicity String? @db.VarChar(100)
+  religion  String? @db.VarChar(100)
+
+  citizenIdNumber     String? @unique @db.VarChar(20) @map("citizen_id_number")
+  citizenIdIssueDate  DateTime? @map("citizen_id_issue_date")
+  citizenIdIssuePlace String? @db.VarChar(150) @map("citizen_id_issue_place")
+
+  educationLevel String? @db.VarChar(100) @map("education_level")
+  major          String? @db.VarChar(150)
+  university     String? @db.VarChar(200)
+
+  placeOfBirth String? @db.VarChar(200) @map("place_of_birth")
+  hometown     String? @db.VarChar(200)
+  nationality  String  @default("Vietnamese") @db.VarChar(100)
+
+  registeredAddress String? @db.Text @map("registered_address")
+  permanentAddress  String? @db.Text @map("permanent_address")
+  currentAddress    String? @db.Text @map("current_address")
+
+  avatarUrl String? @db.Text @map("avatar_url") 
+
+  hireDate DateTime @map("hire_date")
+  fromDate DateTime? @map("from_date")
+
+  positionId Int @map("position_id")
+  position   Position @relation(fields: [positionId], references: [positionId])
+
+  storeId Int @map("store_id")
+  store   Store @relation("StoreEmployees", fields: [storeId], references: [storeId])
+
+  accounts       Account[]
+  schedules      WorkSchedule[]
+  attendanceLogs AttendanceLog[]
+  explanations   AttendanceExplanation[]
+  approvals      AttendanceApproval[] @relation("Approver")
+
+  managedStore Store? @relation("StoreManager")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("employees")
+}
+
+model Account {
+  accountId    Int      @id @default(autoincrement()) @map("account_id")
+  employeeId   Int      @unique @map("employee_id")
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  employeeCode Int   @unique @map("employee_code")
+  password     String   @db.VarChar(255)
+  roleId       Int      @map("role_id")
+  role         Role     @relation(fields: [roleId], references: [id])
+  lastLogin    DateTime? @map("last_login")
+
+  @@map("accounts")
+}
+
+model WorkSchedule {
+  scheduleId Int @id @default(autoincrement()) @map("schedule_id")
+  employeeId Int @map("employee_id")
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  workDate   DateTime @db.Date @map("work_date")
+  shiftId    Int @map("shift_id")
+  shift      Shift @relation(fields: [shiftId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  attendanceExplanations AttendanceExplanation[]
+
+  @@unique([employeeId, workDate])
+  @@map("work_schedules")
+}
+
+enum AttendanceStatus {
+  present
+  off_paid
+  Deviation
+}
+
+enum LogType {
+  IN
+  OUT
+}
+
+model AttendanceLog {
+  id        Int @id @default(autoincrement())
+
+  userId    Int @map("user_id")
+  user      Employee @relation(fields: [userId], references: [id])
+
+  workDate  DateTime @db.Date @map("work_date")
+
+  shiftId   Int? @map("shift_id")
+  shift     Shift? @relation(fields: [shiftId], references: [id])
+
+  logType   String @db.VarChar(10) @map("log_type") 
+  logTime   DateTime @map("log_time")
+  status    String @db.VarChar(20) 
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  attendanceExplanation AttendanceExplanation?
+
+  @@map("attendance_logs")
+}
+
+
+enum ApprovalStatus {
+  approved
+  not_approved
+}
+
+enum SubmissionStatus {
+  submitted
+  not_submitted
+}
+
+enum ExplanationStatus {
+  explained
+  not_explained
+}
+
+model AttendanceExplanation {
+  id Int @id @default(autoincrement())
+  employeeId Int @map("employee_id")
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  attendanceId Int @unique @map("attendance_id")
+  attendance AttendanceLog @relation(fields: [attendanceId], references: [id])
+  workScheduleId Int @map("work_schedule_id")
+  workSchedule WorkSchedule @relation(fields: [workScheduleId], references: [scheduleId], map: "fk_exp_schedule")
+  reason String? @db.VarChar(200)
+  note   String? @db.VarChar(200)
+  approvalStatus    String  @db.VarChar(10) @map("approval_status")
+  explanationStatus String  @db.VarChar(10) @map("explanation_status")
+  submissionStatus  String  @db.VarChar(10) @map("submission_status")
+  proposedCheckInTime  DateTime? @map("proposed_check_in_time")
+  proposedCheckOutTime DateTime? @map("proposed_check_out_time")
+  proposedShiftId      Int? @map("proposed_shift_id")
+  proposedShift        Shift? @relation(fields: [proposedShiftId], references: [id])
+  approvals AttendanceApproval[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("attendance_explanations")
+}
+
+enum ApprovalDecision {
+  approved
+  rejected
+}
+
+model AttendanceApproval {
+  id Int @id @default(autoincrement())
+  explanationId Int
+  explanation AttendanceExplanation @relation(fields: [explanationId], references: [id], onDelete: Cascade)
+  approverId Int
+  approver Employee @relation("Approver", fields: [approverId], references: [id])
+  decision ApprovalDecision
+  approvedAt DateTime?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("attendance_explanation_approvals")
 }

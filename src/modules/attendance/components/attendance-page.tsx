@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
 import {
@@ -10,72 +10,42 @@ import {
   PopoverTrigger,
 } from '@/react-web-ui-shadcn/src/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/react-web-ui-shadcn/src/components/ui/calendar';
+import axios from 'axios';
 
-interface AttendanceRecord {
-  id: string;
-  department: string;
-  type: 'check-in' | 'check-out';
-  time: string;
-  status: string;
+export interface AttendanceLog {
+  id: number;
+  userId: number;
+  shiftId: number | null;
+
+  logType: 'IN' | 'OUT';
+  status: 'present' | 'off_paid' | 'Deviation';
+
+  logTime: string;
+  workDate: string;
+
+  createdAt: string;
+  updatedAt: string;
 }
-
 export function AttendancePage() {
-  const [fromDate, setFromDate] = useState<Date>(new Date(2025, 11, 9));
-  const [toDate, setToDate] = useState<Date>(new Date(2025, 11, 16));
+  const [fromDate, setFromDate] = useState<Date>(new Date());
+  const [toDate, setToDate] = useState<Date>(new Date());
   const [fromDateOpen, setFromDateOpen] = useState(false);
   const [toDateOpen, setToDateOpen] = useState(false);
-
-  const records: AttendanceRecord[] = [
-    {
-      id: '1',
-      department: '06183836 - PL2115 - 2115, 21 Ngõ Gia Tự - KHA',
-      type: 'check-out',
-      time: '15/12/2025 17:07',
-      status: 'Đã duyệt',
-    },
-    {
-      id: '2',
-      department: '06183836 - PL2115 - 2115, 21 Ngõ Gia Tự - KHA',
-      type: 'check-in',
-      time: '15/12/2025 07:02',
-      status: 'Đã duyệt',
-    },
-    {
-      id: '3',
-      department: '06183836 - PL2115 - 2115, 21 Ngõ Gia Tự - KHA',
-      type: 'check-out',
-      time: '14/12/2025 16:10',
-      status: 'Đã duyệt',
-    },
-    {
-      id: '4',
-      department: '06183836 - PL2115 - 2115, 21 Ngõ Gia Tự - KHA',
-      type: 'check-in',
-      time: '14/12/2025 11:42',
-      status: 'Đã duyệt',
-    },
-    {
-      id: '5',
-      department: '06183836 - PL2115 - 2115, 21 Ngõ Gia Tự - KHA',
-      type: 'check-out',
-      time: '12/12/2025 22:38',
-      status: 'Đã duyệt',
-    },
-    {
-      id: '6',
-      department: '06183836 - PL2115 - 2115, 21 Ngõ Gia Tự - KHA',
-      type: 'check-in',
-      time: '12/12/2025 08:15',
-      status: 'Đã duyệt',
-    },
-    {
-      id: '7',
-      department: '06183836 - PL2115 - 2115, 21 Ngõ Gia Tự - KHA',
-      type: 'check-out',
-      time: '11/12/2025 18:30',
-      status: 'Đã duyệt',
-    },
-  ];
+  const [records, setRecords] = useState<AttendanceLog[]>([]);
+  async function fetchStatus() {
+    await axios
+      .post('/api/attendance', {
+        fromDate: fromDate,
+        toDate: toDate,
+      })
+      .then((res) => setRecords(res.data.result))
+      .catch((err) => {
+        console.error(err);
+      });
+  }
+  useEffect(() => {
+    fetchStatus();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -89,8 +59,8 @@ export function AttendancePage() {
       </div>
 
       <div className="p-4 bg-white">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className="grid grid-cols-12 gap-4 items-end">
+          <div className="col-span-5">
             <label className="block text-sm font-medium mb-2">Từ ngày</label>
             <Popover open={fromDateOpen} onOpenChange={setFromDateOpen}>
               <PopoverTrigger asChild>
@@ -117,7 +87,8 @@ export function AttendancePage() {
               </PopoverContent>
             </Popover>
           </div>
-          <div>
+
+          <div className="col-span-5">
             <label className="block text-sm font-medium mb-2">Đến ngày</label>
             <Popover open={toDateOpen} onOpenChange={setToDateOpen}>
               <PopoverTrigger asChild>
@@ -144,6 +115,15 @@ export function AttendancePage() {
               </PopoverContent>
             </Popover>
           </div>
+
+          <div className="col-span-2">
+            <Button
+              onClick={fetchStatus}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-[42px]"
+            >
+              Tìm kiếm
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -154,31 +134,43 @@ export function AttendancePage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {records.map((record) => (
-          <div key={record.id} className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="font-medium mb-2">
-              Bộ phận: <span className="font-normal">{record.department}</span>
+        {records.map((record) => {
+          const isCheckOut = record.logType === 'OUT';
+
+          return (
+            <div key={record.id} className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="text-sm text-gray-500 mb-1">
+                Ngày làm việc:{' '}
+                <span className="font-medium text-gray-700">
+                  {new Date(record.workDate).toLocaleDateString('vi-VN')}
+                </span>
+              </div>
+
+              <div className="mb-1">
+                Loại công:{' '}
+                <span
+                  className={isCheckOut ? 'text-[#C93B3B]' : 'text-[#10B981]'}
+                >
+                  {isCheckOut ? 'Chấm công ra' : 'Chấm công vào'}
+                </span>
+              </div>
+
+              <div className="mb-1">
+                Thời gian:{' '}
+                <span className="font-semibold">
+                  {new Date(record.logTime).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
+
+              <div className="text-xs text-gray-400 mt-2">
+                Tạo lúc: {new Date(record.createdAt).toLocaleString('vi-VN')}
+              </div>
             </div>
-            <div className="mb-1">
-              Loại công:{' '}
-              <span
-                className={
-                  record.type === 'check-out'
-                    ? 'text-[#C93B3B]'
-                    : 'text-[#10B981]'
-                }
-              >
-                {record.type === 'check-out' ? 'Chấm công ra' : 'Chấm công vào'}
-              </span>
-            </div>
-            <div className="mb-1">
-              Thời gian: <span className="font-semibold">{record.time}</span>
-            </div>
-            <div>
-              Tình trạng: <span>{record.status}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

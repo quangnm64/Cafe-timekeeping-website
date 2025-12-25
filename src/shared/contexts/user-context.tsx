@@ -9,18 +9,44 @@ import {
 } from 'react';
 
 export type User = {
-  employeeId: string;
+  id: number;
+
   fullName: string;
-  gender: string;
+  gender?: string;
   dateOfBirth: Date;
-  phone?: string;
-  email?: string;
-  address?: string;
-  storeId: string;
-  positionId: string;
+
+  taxCode?: string;
+
+  bankName?: string;
+  bankAccountNumber?: string;
+
+  ethnicity?: string;
+  religion?: string;
+
+  citizenIdNumber?: string;
+  citizenIdIssueDate?: Date;
+  citizenIdIssuePlace?: string;
+
+  educationLevel?: string;
+  major?: string;
+  university?: string;
+
+  placeOfBirth?: string;
+  hometown?: string;
+  nationality: string;
+
+  registeredAddress?: string;
+  permanentAddress?: string;
+  currentAddress?: string;
+
+  avatarUrl?: string;
+
   hireDate: Date;
-  status: string;
-  avatar?: string;
+  fromDate?: Date;
+
+  positionId: number;
+  storeId: number;
+
   createdAt: Date;
   updatedAt: Date;
 };

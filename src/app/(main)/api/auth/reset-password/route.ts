@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
-import { useUser } from '@/shared/contexts/user-context';
 import prisma from '../../../../../../prisma/prismaClient';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import argon2 from 'argon2';
 
 export async function POST(req: Request) {
   const { oldPassword, newPassword, confirmPassword } = await req.json();
@@ -15,12 +15,13 @@ export async function POST(req: Request) {
 
     const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;
     const user = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const password_hash = await argon2.hash(newPassword);
     await prisma.account.update({
       where: {
-        account_id: BigInt(user.account_id),
+        accountId: user.account_id,
       },
       data: {
-        password_hash: String(newPassword),
+        password: String(password_hash),
       },
     });
 

@@ -3,8 +3,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   const user = await getCurrentUser();
-  console.log('in ra người dùng');
-  console.log(user);
   if (!user) {
     return NextResponse.json(null, { status: 401 });
   }

@@ -2,35 +2,46 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import prisma from '../../../../../../prisma/prismaClient';
+import argon2 from 'argon2';
 
 dotenv.config();
 
 export async function POST(req: Request) {
   const { username, password } = await req.json();
   const user = await prisma.account.findUnique({
-    where: { username, password_hash: password },
+    where: { employeeCode: parseInt(username) },
   });
   if (!user) {
     const res = NextResponse.json({
       status: false,
-      message: 'Sai tên đăng nhập hoặc mật khẩu',
+      message: 'Không tìm thấy tài khoản',
     });
     return res;
   }
+
+  const isValid = await argon2.verify(user.password, password);
+  if (!isValid) {
+    const res = NextResponse.json({
+      status: false,
+      message: 'Sai mật khẩu',
+    });
+    return res;
+  }
+
   await prisma.account.update({
     where: {
-      account_id: BigInt(user.account_id),
+      accountId: user.accountId,
     },
     data: {
-      last_login: new Date(new Date().toISOString()),
+      lastLogin: new Date(new Date().toISOString()),
     },
   });
   const token = signToken({
-    account_id: user?.account_id.toString(),
-    employee_id: user?.employee_id.toString(),
-    role_id: user?.role_id.toString(),
-    username: user?.username,
-    last_login: user?.last_login,
+    account_id: user?.accountId,
+    employee_id: user?.employeeId,
+    role_id: user?.roleId,
+    username: user?.employeeId,
+    last_login: user?.lastLogin,
   });
 
   const res = NextResponse.json({

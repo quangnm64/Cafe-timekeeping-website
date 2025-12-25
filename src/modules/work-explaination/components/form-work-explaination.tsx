@@ -15,17 +15,7 @@ import {
   SelectValue,
 } from '@/react-web-ui-shadcn/src/components/ui/select';
 import { Textarea } from '@/react-web-ui-shadcn/src/components/ui/textarea';
-
-type WorkRecord = {
-  id: number;
-  location: string;
-  employee: string;
-  date: string;
-  shift: string;
-  actualTime1: string;
-  actualTime2: string;
-  status: string;
-};
+import { WorkRecord } from './page-work-explaination';
 
 interface WorkExplanationFormProps {
   record: WorkRecord;
@@ -83,22 +73,59 @@ export function WorkExplanationForm({
       <Card className="p-6 shadow-md border-l-4 border-l-[#658C58]">
         <div className="space-y-2">
           <h3 className="font-bold text-lg text-[#658C58]">
-            {record.location}
+            Mã nhân viên: {record.employeeId}
           </h3>
-          <p className="font-semibold">{record.employee}</p>
+          <p className="font-semibold">Lý do: {record.reason}</p>
+
           <p className="text-sm">
-            <span className="font-medium">Ngày:</span> {record.date}
+            <span className="font-medium">Ngày:</span>{' '}
+            {new Date(record.createdAt).toLocaleDateString('vi-VN')}
           </p>
+
           <p className="text-sm">
-            <span className="font-medium">Ca:</span> {record.shift}
+            <span className="font-medium">Giờ vào đề xuất:</span>{' '}
+            {record.proposedCheckInTime
+              ? new Date(record.proposedCheckInTime).toLocaleTimeString(
+                  'vi-VN',
+                  { hour: '2-digit', minute: '2-digit' }
+                )
+              : 'Chưa có'}
           </p>
+
           <p className="text-sm">
-            <span className="font-medium">Công thực tế 1:</span>{' '}
-            {record.actualTime1}
+            <span className="font-medium">Giờ ra đề xuất:</span>{' '}
+            {record.proposedCheckOutTime
+              ? new Date(record.proposedCheckOutTime).toLocaleTimeString(
+                  'vi-VN',
+                  { hour: '2-digit', minute: '2-digit' }
+                )
+              : 'Chưa có'}
           </p>
+
           <p className="text-sm">
-            <span className="font-medium">Công thực tế 2:</span>{' '}
-            {record.actualTime2}
+            <span className="font-medium">Trạng thái gửi:</span>{' '}
+            <span
+              className={
+                record.submissionStatus === 'YES'
+                  ? 'text-green-600'
+                  : 'text-orange-500'
+              }
+            >
+              {record.submissionStatus === 'YES' ? 'Đã gửi' : 'Chưa gửi'}
+            </span>
+          </p>
+
+          <p className="text-sm">
+            <span className="font-medium">Trạng thái duyệt:</span>{' '}
+            <span
+              className={
+                record.approvalStatus === 'YES'
+                  ? 'text-green-600'
+                  : 'text-gray-500'
+              }
+            >
+              {record.approvalStatus === 'YES' ? 'Đã duyệt' : 'Chờ duyệt'}
+            </span>
           </p>
         </div>
       </Card>

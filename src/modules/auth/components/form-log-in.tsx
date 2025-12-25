@@ -36,7 +36,7 @@ export default function FormLogin() {
 
   const form = useForm<LogInDto>({
     defaultValues: {
-      username: '',
+      username: undefined,
       password: '',
     },
   });
@@ -46,7 +46,7 @@ export default function FormLogin() {
       setLoading(true);
       const user = await axios.post('/api/auth/login', values);
       if (user.data.status) {
-        router.push('/dashboard');
+        router.push('/time-keeping');
         setLoading(false);
       } else {
         alert('chưa tìm thấy tài khoản');
@@ -85,7 +85,7 @@ export default function FormLogin() {
                     <FormLabel className="text-[#31694E]">Username</FormLabel>
                     <FormControl>
                       <Input
-                        type="text"
+                        type="number"
                         placeholder="Username"
                         className="h-11 border-2 border-[#BBC863] focus-visible:ring-2 focus-visible:ring-[#658C58]"
                         {...field}
@@ -118,7 +118,7 @@ export default function FormLogin() {
                           onClick={() => setIsShowPassword(!isShowPassword)}
                           tabIndex={-1}
                         >
-                          {isShowPassword ? (
+                          {!isShowPassword ? (
                             <EyeOffIcon className="h-5 w-5" />
                           ) : (
                             <EyeIcon className="h-5 w-5" />
