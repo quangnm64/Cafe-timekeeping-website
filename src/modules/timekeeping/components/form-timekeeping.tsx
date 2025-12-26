@@ -14,11 +14,11 @@ export function TimekeepingPage() {
   const [long, setLong] = useState(0);
   const [status, setStatus] = useState(false);
 
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+  // const formatter = new Intl.DateTimeFormat('en-US', {
+  //   hour: '2-digit',
+  //   minute: '2-digit',
+  //   second: '2-digit',
+  // });
 
   useEffect(() => {
     async function fetchStatus() {
@@ -35,7 +35,6 @@ export function TimekeepingPage() {
       const res = await fetch(url);
       const data = await res.json();
       const addr = `${data.address.state},${data.address.suburb},${data.address.road}`;
-
       await axios.get('/api/timekeeping', {}).then((res) => {
         if (
           res.data.store.state +
@@ -69,7 +68,7 @@ export function TimekeepingPage() {
         <div className="text-xl opacity-90">
           {status ? 'Bạn đã đúng vị trí' : 'Bạn đã lệch vị trí'}
           <br></br>
-          {address + ' ' + lat + ' ' + long}
+          {address}
         </div>
       </Card>
 

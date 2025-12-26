@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../prisma/prismaClient';
 import { format } from 'date-fns';
-import { error } from 'console';
 
 async function CheckIn() {
   try {
