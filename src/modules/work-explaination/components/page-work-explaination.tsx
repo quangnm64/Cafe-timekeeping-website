@@ -49,6 +49,7 @@ export function WorkExplanationPage() {
       .post('/api/explaination', {
         fromDate: fromDate,
         toDate: toDate,
+        content: 'getData',
       })
       .then((res) => setRecords(res.data.result))
       .catch((err) => {
@@ -58,7 +59,6 @@ export function WorkExplanationPage() {
   useEffect(() => {
     fetchStatus();
   }, []);
-
   if (selectedRecord) {
     return (
       <WorkExplanationForm
@@ -67,6 +67,9 @@ export function WorkExplanationPage() {
       />
     );
   }
+  const handleSubmit = () => {
+    const result = axios.post('/api/explaination', { content: 'submit' });
+  };
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="bg-[#658C58] text-white p-4 rounded-lg flex items-center justify-between shadow-lg">
@@ -205,46 +208,18 @@ export function WorkExplanationPage() {
               </p> */}
 
               <div className="pt-2">
-                <div className="text-sm font-medium mb-3 flex flex-col gap-1">
-                  <p>
-                    Nộp đơn:{' '}
-                    <span
-                      className={
-                        record.submissionStatus === 'YES'
-                          ? 'text-green-600'
-                          : 'text-orange-500'
-                      }
+                {record.submissionStatus === 'YES' && (
+                  <div className="text-sm font-medium mb-3 flex flex-col gap-1"></div>
+                )}
+                {record.submissionStatus === 'NO' && (
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-[#658C58] text-[#658C58] hover:bg-[#658C58] hover:text-white bg-transparent"
                     >
-                      {record.submissionStatus === 'YES'
-                        ? 'Đã gửi'
-                        : 'Bản nháp'}
-                    </span>
-                  </p>
-                  <p>
-                    Duyệt:{' '}
-                    <span
-                      className={
-                        record.approvalStatus === 'YES'
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      }
-                    >
-                      {record.approvalStatus === 'YES'
-                        ? 'Đã phê duyệt'
-                        : 'Chờ duyệt'}
-                    </span>
-                  </p>
-                </div>
+                      Lịch sử
+                    </Button>
 
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-[#658C58] text-[#658C58] hover:bg-[#658C58] hover:text-white bg-transparent"
-                  >
-                    Lịch sử
-                  </Button>
-
-                  {record.approvalStatus === 'NO' && (
                     <Button
                       variant="outline"
                       className="flex-1 border-[#658C58] text-[#658C58] hover:bg-[#658C58] hover:text-white bg-transparent"
@@ -252,17 +227,18 @@ export function WorkExplanationPage() {
                     >
                       Giải trình
                     </Button>
-                  )}
 
-                  {record.submissionStatus === 'NO' && (
-                    <Button
-                      variant="outline"
-                      className="flex-1 border-red-600 text-red-600 hover:bg-red-600 hover:text-white bg-transparent"
-                    >
-                      Gửi đơn
-                    </Button>
-                  )}
-                </div>
+                    {record.explanationStatus === 'YES' && (
+                      <Button
+                        variant="outline"
+                        className="flex-1 border-red-600 text-red-600 hover:bg-red-600 hover:text-white bg-transparent"
+                        onClick={() => handleSubmit()}
+                      >
+                        Gửi đơn
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </Card>

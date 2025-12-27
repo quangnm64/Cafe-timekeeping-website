@@ -57,7 +57,7 @@ export function PersonalAccountPage() {
     return <JobDescriptionPage onBack={() => setSelectedMenu(null)} />;
   }
   if (selectedMenu === 'change-password') {
-    return <ChangePasswordPage />;
+    return <ChangePasswordPage onBack={() => setSelectedMenu(null)} />;
   }
   if (selectedMenu === 'default-store') {
     return <StoreListPage onBack={() => setSelectedMenu(null)} />;

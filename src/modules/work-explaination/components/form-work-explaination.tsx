@@ -16,6 +16,7 @@ import {
 } from '@/react-web-ui-shadcn/src/components/ui/select';
 import { Textarea } from '@/react-web-ui-shadcn/src/components/ui/textarea';
 import { WorkRecord } from './page-work-explaination';
+import axios from 'axios';
 
 interface WorkExplanationFormProps {
   record: WorkRecord;
@@ -45,7 +46,19 @@ export function WorkExplanationForm({
     }
   };
 
-  const handleSubmit = () => {};
+  const handleSubmit = async () => {
+    const result = await axios.post('/api/explaination', {
+      content: 'submit',
+      reason: reason,
+      notes: notes,
+      startTime: startTime,
+      endTime: endTime,
+      shiftCode: shiftCode,
+      id: record.id,
+      explanationStatus: record.explanationStatus,
+    });
+    console.log(result.data.status);
+  };
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">

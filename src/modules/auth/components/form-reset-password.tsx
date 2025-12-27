@@ -16,13 +16,14 @@ import { Input } from '@/react-web-ui-shadcn/src/components/ui/input';
 import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
 import { ChangePasswordDto } from '../interfaces/auth.interfaces';
 import axios from 'axios';
-
-export function ChangePasswordPage() {
+interface ChangePasswordPageProps {
+  onBack: () => void;
+}
+export function ChangePasswordPage({ onBack }: ChangePasswordPageProps) {
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const form = useForm<ChangePasswordDto>({
     defaultValues: {
       oldPassword: '',
@@ -42,6 +43,8 @@ export function ChangePasswordPage() {
           confirmPassword: '',
         });
         setLoading(false);
+        await axios.post('/api/auth/log-out');
+        window.location.href = '/log-in';
       } else {
         alert('chưa tìm thấy tài khoản');
       }
@@ -55,7 +58,10 @@ export function ChangePasswordPage() {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-[#658C58] text-white p-6 rounded-t-lg relative">
-        <button className="p-2 hover:bg-[#31694E] rounded-lg transition-colors">
+        <button
+          className="p-2 hover:bg-[#31694E] rounded-lg transition-colors"
+          onClick={onBack}
+        >
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-bold text-center">ĐỔI MẬT KHẨU</h1>
@@ -83,7 +89,7 @@ export function ChangePasswordPage() {
                         onClick={() => setShowOld(!showOld)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                       >
-                        {showOld ? (
+                        {!showOld ? (
                           <EyeOff className="w-5 h-5" />
                         ) : (
                           <Eye className="w-5 h-5" />
@@ -115,7 +121,7 @@ export function ChangePasswordPage() {
                         onClick={() => setShowNew(!showNew)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                       >
-                        {showNew ? (
+                        {!showNew ? (
                           <EyeOff className="w-5 h-5" />
                         ) : (
                           <Eye className="w-5 h-5" />
@@ -147,7 +153,7 @@ export function ChangePasswordPage() {
                         onClick={() => setShowConfirm(!showConfirm)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                       >
-                        {showConfirm ? (
+                        {!showConfirm ? (
                           <EyeOff className="w-5 h-5" />
                         ) : (
                           <Eye className="w-5 h-5" />
