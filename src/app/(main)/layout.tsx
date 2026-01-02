@@ -16,6 +16,7 @@ export default function MainLayout({
     | 'attendance'
     | 'work-schedule'
     | 'explaination-approval'
+    | 'arrange-schedule'
   >('timekeeping');
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">

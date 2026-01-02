@@ -26,7 +26,10 @@ export interface AttendanceLog {
   createdAt: string;
   updatedAt: string;
 }
-export function AttendancePage() {
+interface AttendanceSearchPageProps {
+  onPageChange: (page: 'attendance' | 'attendance-record') => void;
+}
+export function AttendancePage({ onPageChange }: AttendanceSearchPageProps) {
   const [fromDate, setFromDate] = useState<Date>(new Date());
   const [toDate, setToDate] = useState<Date>(new Date());
   const [fromDateOpen, setFromDateOpen] = useState(false);
@@ -48,7 +51,7 @@ export function AttendancePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className=" h-full bg-gray-100 flex flex-col ">
       <div className="bg-[#658C58] text-white p-4 flex items-center gap-4">
         <button className="hover:opacity-80">
           <ArrowLeft className="w-6 h-6" />
@@ -171,6 +174,20 @@ export function AttendancePage() {
             </div>
           );
         })}
+      </div>
+      <div className="bg-background border-t border-border pt-4 flex gap-4 mt-6 bottom-0 left-0 right-0 sticky">
+        <Button
+          onClick={() => onPageChange('attendance-record')}
+          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-6 text-base cursor-pointer rounded-lg"
+        >
+          Chấm công vào
+        </Button>
+        <Button
+          onClick={() => onPageChange('attendance-record')}
+          className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-medium py-6 text-base cursor-pointer rounded-lg"
+        >
+          Chấm công ra
+        </Button>
       </div>
     </div>
   );

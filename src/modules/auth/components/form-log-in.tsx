@@ -36,7 +36,7 @@ export default function FormLogin() {
 
   const form = useForm<LogInDto>({
     defaultValues: {
-      username: undefined,
+      username: '',
       password: '',
     },
   });
@@ -126,13 +126,6 @@ export default function FormLogin() {
                         </Button>
                       </div>
                     </FormControl>
-
-                    <Link
-                      href="/forgot-password"
-                      className="text-xs text-[#658C58] hover:underline"
-                    >
-                      Quên mật khẩu?
-                    </Link>
 
                     <FormMessage />
                   </FormItem>

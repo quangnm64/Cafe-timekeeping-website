@@ -19,7 +19,8 @@ interface DashboardSidebarProps {
     | 'personal-account'
     | 'attendance'
     | 'work-schedule'
-    | 'explaination-approval';
+    | 'explaination-approval'
+    | 'arrange-schedule';
   onPageChange: (
     page:
       | 'dashboard'
@@ -29,6 +30,7 @@ interface DashboardSidebarProps {
       | 'attendance'
       | 'work-schedule'
       | 'explaination-approval'
+      | 'arrange-schedule'
   ) => void;
 }
 
@@ -164,6 +166,22 @@ export function DashboardSidebar({
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span className="text-sm">Cá nhân</span>
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                router.push('/arrange-schedule');
+                onPageChange('arrange-schedule');
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
+                currentPage === 'arrange-schedule'
+                  ? 'bg-primary-foreground/20'
+                  : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="text-sm">Xếp lịch</span>
               </div>
             </button>
           </div>

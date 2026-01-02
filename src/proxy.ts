@@ -1,12 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse, NextRequest } from 'next/server';
 
-const authPages = [
-  '/log-in',
-  '/forgot-password',
-  '/reset-password',
-  '/sign-up',
-];
+const authPages = ['/log-in', '/reset-password', '/sign-up'];
 
 const protectedPages = ['/dashboard', '/profile', '/time-keeping', '/log-out'];
 

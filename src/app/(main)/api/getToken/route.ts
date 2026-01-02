@@ -8,7 +8,7 @@ export async function POST() {
     const token = (await cookies()).get('access_token')?.value;
 
     if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ message: 'Unauthorized' });
     }
 
     const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;

@@ -6,10 +6,10 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type DaySchedule = {
-  schedule_id?: number;
-  employee_id?: number;
-  work_date: string | Date;
-  shift_id?: number;
+  scheduleId?: number;
+  employeeId?: number;
+  workDate: string;
+  shiftId?: number;
   shift?: Shift;
 };
 
@@ -102,8 +102,16 @@ export function WorkSchedulePage() {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const schedule = scheduleData[day];
+      const schedule = scheduleData.find((item) => {
+        if (!item.workDate) return false;
 
+        const d = new Date(item.workDate);
+        return (
+          d.getUTCDate() === day &&
+          d.getUTCMonth() === currentMonth &&
+          d.getUTCFullYear() === currentYear
+        );
+      });
       const isToday = day === today && currentMonth === new Date().getMonth();
       const statusStyle = schedule
         ? getStatusStyle('work')
