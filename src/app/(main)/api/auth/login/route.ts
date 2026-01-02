@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
 import prisma from '../../../../../../prisma/prismaClient';
 import argon2 from 'argon2';
-
-dotenv.config();
 
 export async function POST(req: Request) {
   const { username, password } = await req.json();
   const user = await prisma.account.findUnique({
     where: { employeeCode: parseInt(username) },
   });
+
   if (!user) {
     const res = NextResponse.json({
       status: false,
@@ -20,6 +18,7 @@ export async function POST(req: Request) {
   }
 
   const isValid = await argon2.verify(user.password, password);
+
   if (!isValid) {
     const res = NextResponse.json({
       status: false,
@@ -36,6 +35,7 @@ export async function POST(req: Request) {
       lastLogin: new Date(new Date().toISOString()),
     },
   });
+
   const token = signToken({
     account_id: user?.accountId,
     employee_id: user?.employeeId,

@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
+import axios from 'axios';
 import {
   ChevronLeft,
   Clock,
@@ -9,7 +10,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface DashboardSidebarProps {
   currentPage:
@@ -40,7 +41,21 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [role, setRole] = useState<number | null>(null);
 
+  async function fetchStatus() {
+    await axios
+      .get('/api/getToken', {})
+      .then((res) => {
+        setRole(res.data.user.role_id ?? null);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }
+  useEffect(() => {
+    fetchStatus();
+  }, []);
   return (
     <aside
       className={`bg-primary text-primary-foreground flex flex-col transition-all ${
@@ -106,13 +121,15 @@ export function DashboardSidebar({
                 router.push('/explaination-approval');
                 onPageChange('explaination-approval');
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
+              className={`${
+                role === 2 ? 'flex' : 'hidden'
+              } w-full items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
                 currentPage === 'explaination-approval'
                   ? 'bg-primary-foreground/20'
                   : ''
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ">
                 <Calendar className="w-4 h-4" />
                 <span className="text-sm">Phê duyệt giải trình công</span>
               </div>
@@ -173,7 +190,9 @@ export function DashboardSidebar({
                 router.push('/arrange-schedule');
                 onPageChange('arrange-schedule');
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
+              className={`${
+                role === 2 ? 'flex' : 'hidden'
+              } w-full items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
                 currentPage === 'arrange-schedule'
                   ? 'bg-primary-foreground/20'
                   : ''

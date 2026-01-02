@@ -33,3 +33,21 @@ export async function POST() {
     );
   }
 }
+
+export async function GET() {
+  try {
+    const token = (await cookies()).get('access_token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ message: 'Unauthorized' });
+    }
+
+    const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;
+    const user = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    return NextResponse.json({
+      user: user,
+    });
+  } catch (error) {
+    console.error('getToken error:', error);
+  }
+}
