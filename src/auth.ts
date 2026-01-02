@@ -33,7 +33,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
           return res.json();
         });
-        console.log(user);
         if (!user) return null;
         return {
           id: user.accountId.toString(),

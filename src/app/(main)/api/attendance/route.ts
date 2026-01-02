@@ -8,7 +8,6 @@ export async function POST(req: Request) {
   const json = await req.json();
   const from = json.fromDate;
   const to = json.toDate;
-  console.log(format(from, 'yyyy-MM-dd'), format(to, 'yyyy-MM-dd'));
   try {
     const token = (await cookies()).get('access_token')?.value;
 

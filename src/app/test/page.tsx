@@ -13,15 +13,7 @@ function GetCurrentAddress() {
 
       fetch(url)
         .then((res) => res.json())
-        .then((data) => {
-          console.log(
-            data.address.city +
-              ' ' +
-              data.address.road +
-              ' ' +
-              data.address.state
-          );
-        });
+        .then((data) => {});
     });
   }, []);
 

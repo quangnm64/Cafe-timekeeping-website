@@ -28,14 +28,13 @@ import {
 import { Calendar, Send, Search } from 'lucide-react';
 import { shift } from '@/constants/shift';
 
-/* ================= TYPES ================= */
-
 interface ScheduleItem {
   workDate: string;
   shiftId: number;
 }
 
 interface ShiftAssignment {
+  id?: string;
   employeeId: string;
   dateKey: string;
   shiftId: string;
@@ -49,8 +48,6 @@ export type UserType = {
   schedules?: ScheduleItem[];
 };
 
-/* ================= CONSTANT ================= */
-
 const DAYS_TEXT = [
   'Thứ 2',
   'Thứ 3',
@@ -60,8 +57,6 @@ const DAYS_TEXT = [
   'Thứ 7',
   'Chủ nhật',
 ];
-
-/* ================= COMPONENT ================= */
 
 export function ArrangeWorkSchedulePage() {
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
@@ -76,8 +71,6 @@ export function ArrangeWorkSchedulePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [submitStatus, setSubmitStatus] = useState(false);
-
-  /* ================= DATE ================= */
 
   const nextWeekDate = useMemo(() => {
     const now = new Date();
@@ -100,35 +93,35 @@ export function ArrangeWorkSchedulePage() {
 
   const getDateKey = (date: Date) => date.toISOString().slice(0, 10);
 
-  /* ================= FETCH DATA ================= */
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const user = await getCurrentUser();
         if (!user) return;
 
-        const res = await axios.post('/api/arrange-schedule', {
-          content: 'getdata',
-          monday: daysInNextWeek[0],
-          sunday: daysInNextWeek[6],
-          storeId: user.storeId,
-        });
-
-        const staffData: UserType[] = res.data.result ?? [];
-        setStaff(staffData);
-        setSubmitStatus(Boolean(res.data.status));
-
-        // ✅ MAP schedules -> assignments
-        const mappedAssignments: ShiftAssignment[] = staffData.flatMap((emp) =>
-          (emp.schedules ?? []).map((s) => ({
-            employeeId: String(emp.id),
-            dateKey: new Date(s.workDate).toISOString().slice(0, 10),
-            shiftId: String(s.shiftId),
-          }))
-        );
-
-        setAssignments(mappedAssignments);
+        await axios
+          .post('/api/arrange-schedule', {
+            content: 'getdata',
+            monday: daysInNextWeek[0],
+            sunday: daysInNextWeek[6],
+            storeId: user.storeId,
+          })
+          .then((res) => {
+            const staffData: UserType[] = res.data.result ?? [];
+            console.log(res.data);
+            setStaff(staffData);
+            setSubmitStatus(Boolean(res.data.status));
+            const mappedAssignments: ShiftAssignment[] = staffData.flatMap(
+              (emp) =>
+                (emp.schedules ?? []).map((s) => ({
+                  id: String(emp.id),
+                  employeeId: String(emp.id),
+                  dateKey: new Date(s.workDate).toISOString().slice(0, 10),
+                  shiftId: String(s.shiftId),
+                }))
+            );
+            setAssignments(mappedAssignments);
+          });
       } catch {
         alert('Có lỗi xảy ra');
       }
@@ -137,8 +130,6 @@ export function ArrangeWorkSchedulePage() {
     fetchData();
   }, [daysInNextWeek]);
 
-  /* ================= SHIFT FILTER ================= */
-
   const filteredShifts = useMemo(() => {
     return shift.filter((s) =>
       `${s.name} ${s.startTime} ${s.endTime}`
@@ -146,8 +137,6 @@ export function ArrangeWorkSchedulePage() {
         .includes(searchTerm.toLowerCase())
     );
   }, [searchTerm]);
-
-  /* ================= HANDLERS ================= */
 
   const handleCellClick = (employeeId: string, date: Date) => {
     setSelectedCell({ employeeId, dateKey: getDateKey(date) });
@@ -184,14 +173,10 @@ export function ArrangeWorkSchedulePage() {
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const res = await axios.post('/api/arrange-schedule', {
+      await axios.post('/api/arrange-schedule', {
         content: 'submit',
         schedule: assignments,
       });
-
-      res.data.status
-        ? alert('Tạo lịch thành công')
-        : alert('Tạo lịch không thành công');
     } catch {
       alert('Có lỗi xảy ra');
     } finally {
@@ -199,8 +184,6 @@ export function ArrangeWorkSchedulePage() {
       setShowConfirmDialog(false);
     }
   };
-
-  /* ================= RENDER (GIỮ NGUYÊN UI) ================= */
 
   return (
     <div className="space-y-6 p-4 max-w-7xl mx-auto min-h-screen">

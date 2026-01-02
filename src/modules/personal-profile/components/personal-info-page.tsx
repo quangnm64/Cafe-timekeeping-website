@@ -7,11 +7,10 @@ import { useEffect } from 'react';
 
 export function PersonalInfoPage() {
   const { user, loading, refetch } = useUser();
+
   useEffect(() => {
-    if (!loading && user === null) {
-      refetch();
-    }
-  }, [loading, user, refetch]);
+    refetch();
+  }, []);
   if (loading) {
     return <div>Loading...</div>;
   }

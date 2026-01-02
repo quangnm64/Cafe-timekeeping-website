@@ -20,7 +20,6 @@ export async function GET() {
         store: true,
       },
     });
-    console.log(result);
     if (result?.store) {
       return NextResponse.json({
         store: result.store,

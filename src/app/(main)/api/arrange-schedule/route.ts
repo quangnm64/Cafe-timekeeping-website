@@ -1,8 +1,7 @@
-import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../prisma/prismaClient';
-import { cookies } from 'next/headers';
 interface ShiftAssignment {
+  id?: string;
   employeeId: string;
   dateKey: string;
   shiftId: string;
@@ -24,7 +23,7 @@ async function getdata(monday: string, sunday: string, storeId: number) {
         },
       },
     });
-    if (result && !result[0].schedules) {
+    if (result && result[0].schedules.length) {
       return NextResponse.json({
         result: result,
         status: true,
@@ -41,28 +40,41 @@ async function getdata(monday: string, sunday: string, storeId: number) {
 }
 
 async function submit(schedule: ShiftAssignment[]) {
+  const re = NextResponse.json({
+    status: true,
+  });
   const data = schedule.map((item) => ({
     employeeId: Number(item.employeeId),
     shiftId: Number(item.shiftId),
     workDate: new Date(item.dateKey),
   }));
-  data.forEach((item) => console.log(item));
-  const result = await prisma.workSchedule.createMany({
-    data: data,
-    skipDuplicates: true,
-  });
-  if (result) {
-    return NextResponse.json({
-      status: true,
-    });
-  }
+  const result = await Promise.all(
+    data.map((item) =>
+      prisma.workSchedule.upsert({
+        where: {
+          employeeId_workDate: {
+            employeeId: item.employeeId,
+            workDate: item.workDate,
+          },
+        },
+        update: {
+          shiftId: item.shiftId,
+        },
+        create: {
+          employeeId: item.employeeId,
+          shiftId: item.shiftId,
+          workDate: item.workDate,
+        },
+      })
+    )
+  );
+  if (result) return re;
   return NextResponse.json({
     status: false,
   });
 }
 export async function POST(req: Request) {
   const request = await req.json();
-
   if (request.content === 'getdata') {
     return getdata(request.monday, request.sunday, request.storeId);
   } else if (request.content === 'submit') {

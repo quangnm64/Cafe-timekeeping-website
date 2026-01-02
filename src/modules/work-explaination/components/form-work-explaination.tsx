@@ -57,7 +57,6 @@ export function WorkExplanationForm({
       id: record.id,
       explanationStatus: record.explanationStatus,
     });
-    console.log(result.data.status);
   };
 
   return (

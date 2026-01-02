@@ -44,9 +44,6 @@ async function submit(
   startTime: string,
   endTime: string
 ) {
-  console.log(startTime, endTime);
-  console.log(typeof startTime);
-  console.log(reason);
   const records = await prisma.attendanceExplanation.update({
     where: {
       id: id,
