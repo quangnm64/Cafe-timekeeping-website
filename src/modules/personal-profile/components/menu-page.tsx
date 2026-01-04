@@ -6,8 +6,6 @@ import {
   FileText,
   User,
   Users,
-  Briefcase,
-  Gift,
   Ticket,
   Receipt,
   RotateCcw,
@@ -28,7 +26,7 @@ export function PersonalAccountPage() {
   const menuItems = [
     { id: 'job-description', label: 'Mô tả công việc', icon: FileText },
     { id: 'personal-profile', label: 'Hồ sơ cá nhân', icon: User },
-    { id: 'my-team', label: 'Team của tôi', icon: Users },
+    // { id: 'my-team', label: 'Team của tôi', icon: Users },
     // { id: 'work-process', label: 'Quá trình công tác', icon: Briefcase },
     // { id: 'benefits', label: 'Chế độ phúc lợi', icon: Gift },
     // { id: 'voucher-coupon', label: 'Voucher & Coupon', icon: Ticket },

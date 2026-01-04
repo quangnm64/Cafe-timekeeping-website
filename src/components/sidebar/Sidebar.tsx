@@ -21,7 +21,10 @@ interface DashboardSidebarProps {
     | 'attendance'
     | 'work-schedule'
     | 'explaination-approval'
-    | 'arrange-schedule';
+    | 'arrange-schedule'
+    | 'staff-management'
+    | 'explaination-approval-management';
+
   onPageChange: (
     page:
       | 'dashboard'
@@ -32,6 +35,8 @@ interface DashboardSidebarProps {
       | 'work-schedule'
       | 'explaination-approval'
       | 'arrange-schedule'
+      | 'staff-management'
+      | 'explaination-approval-management'
   ) => void;
 }
 
@@ -81,10 +86,6 @@ export function DashboardSidebar({
       {!isCollapsed && (
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           <div className="mb-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-70">
-              List Menu
-            </h3>
-
             <button
               onClick={() => {
                 router.push('/time-keeping');
@@ -201,6 +202,38 @@ export function DashboardSidebar({
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span className="text-sm">Xếp lịch</span>
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                router.push('/staff-management');
+                onPageChange('staff-management');
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
+                currentPage === 'staff-management'
+                  ? 'bg-primary-foreground/20'
+                  : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="text-sm">Super Admin</span>
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                router.push('/explaination-approval-management');
+                onPageChange('explaination-approval-management');
+              }}
+              className={` w-full items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
+                currentPage === 'explaination-approval-management'
+                  ? 'bg-primary-foreground/20'
+                  : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="text-sm">Quản lý duyệt giải trình</span>
               </div>
             </button>
           </div>

@@ -3,11 +3,11 @@
 import { Card } from '@/react-web-ui-shadcn/src/components/ui/card';
 import { useUser } from '@/shared/contexts/user-context';
 import { ArrowLeft, Mail } from 'lucide-react';
+import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
 
 export function PersonalInfoPage() {
   const { user, loading, refetch } = useUser();
-
   useEffect(() => {
     refetch();
   }, []);
