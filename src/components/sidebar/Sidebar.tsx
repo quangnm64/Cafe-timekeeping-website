@@ -9,7 +9,7 @@ import {
   User,
   Calendar,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Thêm usePathname
 import { useEffect, useState } from 'react';
 
 interface DashboardSidebarProps {
@@ -45,6 +45,7 @@ export function DashboardSidebar({
   onPageChange,
 }: DashboardSidebarProps) {
   const router = useRouter();
+  const pathname = usePathname(); // Lấy URL hiện tại
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [role, setRole] = useState<number | null>(null);
 
@@ -58,9 +59,14 @@ export function DashboardSidebar({
         console.error(err);
       });
   }
+
   useEffect(() => {
     fetchStatus();
   }, []);
+
+  // Hàm kiểm tra xem nút có đang active hay không dựa trên URL
+  const isActive = (path: string) => pathname === path;
+
   return (
     <aside
       className={`bg-primary text-primary-foreground flex flex-col transition-all ${
@@ -86,13 +92,14 @@ export function DashboardSidebar({
       {!isCollapsed && (
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           <div className="mb-6">
+            {/* Chấm công */}
             <button
               onClick={() => {
                 router.push('/time-keeping');
                 onPageChange('timekeeping');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'timekeeping' ? 'bg-primary-foreground/20' : ''
+                isActive('/time-keeping') ? 'bg-primary-foreground/20' : ''
               }`}
             >
               <div className="flex items-center gap-2">
@@ -101,15 +108,14 @@ export function DashboardSidebar({
               </div>
             </button>
 
+            {/* Giải trình công */}
             <button
               onClick={() => {
                 router.push('/explaination');
                 onPageChange('work-explanation');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'work-explanation'
-                  ? 'bg-primary-foreground/20'
-                  : ''
+                isActive('/explaination') ? 'bg-primary-foreground/20' : ''
               }`}
             >
               <div className="flex items-center gap-2">
@@ -117,6 +123,8 @@ export function DashboardSidebar({
                 <span className="text-sm">Giải trình công</span>
               </div>
             </button>
+
+            {/* Phê duyệt giải trình công */}
             <button
               onClick={() => {
                 router.push('/explaination-approval');
@@ -125,7 +133,7 @@ export function DashboardSidebar({
               className={`${
                 role === 2 ? 'flex' : 'hidden'
               } w-full items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'explaination-approval'
+                isActive('/explaination-approval')
                   ? 'bg-primary-foreground/20'
                   : ''
               }`}
@@ -136,13 +144,14 @@ export function DashboardSidebar({
               </div>
             </button>
 
+            {/* Bảng chấm công */}
             <button
               onClick={() => {
                 router.push('/attendance');
                 onPageChange('attendance');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'attendance' ? 'bg-primary-foreground/20' : ''
+                isActive('/attendance') ? 'bg-primary-foreground/20' : ''
               }`}
             >
               <div className="flex items-center gap-2">
@@ -151,18 +160,14 @@ export function DashboardSidebar({
               </div>
             </button>
 
+            {/* Lịch làm việc */}
             <button
               onClick={() => {
-                {
-                  router.push('/schedule');
-                  onPageChange('work-schedule');
-                }
+                router.push('/schedule');
                 onPageChange('work-schedule');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'work-schedule'
-                  ? 'bg-primary-foreground/20'
-                  : ''
+                isActive('/schedule') ? 'bg-primary-foreground/20' : ''
               }`}
             >
               <div className="flex items-center gap-2">
@@ -170,15 +175,15 @@ export function DashboardSidebar({
                 <span className="text-sm">Lịch làm việc</span>
               </div>
             </button>
+
+            {/* Cá nhân */}
             <button
               onClick={() => {
                 router.push('/profile');
                 onPageChange('personal-account');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'personal-account'
-                  ? 'bg-primary-foreground/20'
-                  : ''
+                isActive('/profile') ? 'bg-primary-foreground/20' : ''
               }`}
             >
               <div className="flex items-center gap-2">
@@ -186,6 +191,8 @@ export function DashboardSidebar({
                 <span className="text-sm">Cá nhân</span>
               </div>
             </button>
+
+            {/* Xếp lịch */}
             <button
               onClick={() => {
                 router.push('/arrange-schedule');
@@ -194,9 +201,7 @@ export function DashboardSidebar({
               className={`${
                 role === 2 ? 'flex' : 'hidden'
               } w-full items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'arrange-schedule'
-                  ? 'bg-primary-foreground/20'
-                  : ''
+                isActive('/arrange-schedule') ? 'bg-primary-foreground/20' : ''
               }`}
             >
               <div className="flex items-center gap-2">
@@ -204,15 +209,15 @@ export function DashboardSidebar({
                 <span className="text-sm">Xếp lịch</span>
               </div>
             </button>
+
+            {/* Super Admin */}
             <button
               onClick={() => {
                 router.push('/staff-management');
                 onPageChange('staff-management');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'staff-management'
-                  ? 'bg-primary-foreground/20'
-                  : ''
+                isActive('/staff-management') ? 'bg-primary-foreground/20' : ''
               }`}
             >
               <div className="flex items-center gap-2">
@@ -220,13 +225,15 @@ export function DashboardSidebar({
                 <span className="text-sm">Super Admin</span>
               </div>
             </button>
+
+            {/* Quản lý duyệt giải trình */}
             <button
               onClick={() => {
                 router.push('/explaination-approval-management');
                 onPageChange('explaination-approval-management');
               }}
               className={` w-full items-center justify-between px-3 py-2 rounded hover:bg-primary-foreground/10 transition-colors ${
-                currentPage === 'explaination-approval-management'
+                isActive('/explaination-approval-management')
                   ? 'bg-primary-foreground/20'
                   : ''
               }`}

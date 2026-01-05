@@ -3,128 +3,129 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../prisma/prismaClient';
 import { format } from 'date-fns';
+function combineDateAndTime(workDate: Date, time: Date) {
+  const d = new Date(workDate);
+  d.setHours(time.getUTCHours(), time.getUTCMinutes(), time.getUTCSeconds(), 0);
+  return d;
+}
 
 async function CheckIn() {
   try {
     const token = (await cookies()).get('access_token')?.value;
-
     if (!token) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;
     const user = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+
     const workDate = new Date();
     workDate.setHours(0, 0, 0, 0);
+
+    const workSchedule = await prisma.workSchedule.findFirst({
+      where: {
+        employeeId: user.employee_id,
+        workDate: new Date(format(workDate, 'yyyy-MM-dd')),
+      },
+      include: {
+        shift: true,
+      },
+    });
+
+    if (!workSchedule) {
+      return NextResponse.json({ message: 'Bạn chưa được xếp lịch' });
+    }
+
+    const now = new Date();
+
+    const shiftStart = combineDateAndTime(
+      workSchedule.workDate,
+      workSchedule.shift.startTime
+    );
+
+    const lateLimit = new Date(shiftStart.getTime() + 60 * 60 * 1000);
+
+    const status = now > lateLimit ? 'Deviation' : 'present';
+
     const result = await prisma.attendanceLog.create({
       data: {
         userId: user.employee_id,
         workDate: new Date(format(workDate, 'yyyy-MM-dd')),
         logType: 'IN',
-        logTime: new Date(),
-        status: 'present',
+        logTime: now,
+        status,
+        shiftId: workSchedule.shiftId,
         createdAt: new Date(),
-        shiftId: 2,
       },
     });
-    if (result) {
-      return NextResponse.json({
-        status: true,
-        resut: result,
-      });
-    }
+
     return NextResponse.json({
-      status: false,
+      status: true,
+      result,
     });
   } catch (error) {
-    console.error('Create attendance error:', error);
+    console.error('CheckIn error:', error);
     throw error;
   }
 }
 async function CheckOut() {
   try {
     const token = (await cookies()).get('access_token')?.value;
-
     if (!token) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const JWT_SECRET = process.env.JWT_TOKEN_SECRET!;
     const user = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+
     const workDate = new Date();
-    const schedule = await prisma.workSchedule.findFirst({
+    workDate.setHours(0, 0, 0, 0);
+
+    const workSchedule = await prisma.workSchedule.findFirst({
       where: {
-        employeeId: parseInt(user.employee_id),
-        workDate: new Date(format(new Date(), 'yyyy-MM-dd')),
+        employeeId: user.employee_id,
+        workDate: new Date(format(workDate, 'yyyy-MM-dd')),
+      },
+      include: {
+        shift: true,
       },
     });
-    if (!schedule) {
-      return NextResponse.json({
-        status: true,
-        message: 'Không tìm thấy lịch làm việc',
-      });
+
+    if (!workSchedule) {
+      return NextResponse.json({ message: 'Bạn chưa được xếp lịch' });
     }
-    const shift = await prisma.shift.findUnique({
-      where: {
-        // id: schedule?.shiftId,
-        id: 2,
-      },
-    });
 
-    const current = new Date(workDate.getTime() + 7 * 60 * 60 * 1000);
-    const currentMinutes = current.getUTCHours() * 60 + current.getUTCMinutes();
-    const endMinutes = shift?.endTime
-      ? shift.endTime.getUTCHours() * 60 + shift.endTime.getUTCMinutes()
-      : 0;
+    const now = new Date();
 
-    const isInLastHour =
-      currentMinutes >= endMinutes + 60 || currentMinutes < endMinutes;
+    const shiftEnd = combineDateAndTime(
+      workSchedule.workDate,
+      workSchedule.shift.endTime
+    );
+
+    const status = now < shiftEnd ? 'Deviation' : 'present';
 
     const result = await prisma.attendanceLog.create({
       data: {
         userId: user.employee_id,
         workDate: new Date(format(workDate, 'yyyy-MM-dd')),
         logType: 'OUT',
-        logTime: new Date(),
-        status: isInLastHour ? 'Deviation' : 'present',
+        logTime: now,
+        status,
+        shiftId: workSchedule.shiftId,
         createdAt: new Date(),
-        shiftId: schedule?.shiftId,
       },
     });
-    if (isInLastHour) {
-      await prisma.attendanceExplanation
-        .create({
-          data: {
-            employeeId: user.employee_id,
-            attendanceId: result.id,
-            workScheduleId: schedule?.scheduleId ?? 2,
-            approvalStatus: 'NO',
-            explanationStatus: 'NO',
-            submissionStatus: 'NO',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        })
-        .catch((error) => console.log(error));
-    }
-    if (result) {
-      return NextResponse.json({
-        status: true,
-        resut: {
-          ...result,
-          attendance_id: result.id.toString(),
-          employee_id: result.userId.toString(),
-        },
-      });
-    }
+
     return NextResponse.json({
-      status: false,
+      status: true,
+      result,
     });
   } catch (error) {
-    console.error('Create attendance error:', error);
+    console.error('CheckOut error:', error);
     throw error;
   }
 }
+
 export async function GET() {
   try {
     const token = (await cookies()).get('access_token')?.value;

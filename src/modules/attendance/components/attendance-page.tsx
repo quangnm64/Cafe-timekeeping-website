@@ -11,6 +11,7 @@ import {
 } from '@/react-web-ui-shadcn/src/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/react-web-ui-shadcn/src/components/ui/calendar';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 export interface AttendanceLog {
   id: number;
@@ -30,6 +31,7 @@ interface AttendanceSearchPageProps {
   onPageChange: (page: 'attendance' | 'attendance-record') => void;
 }
 export function AttendancePage({ onPageChange }: AttendanceSearchPageProps) {
+  const router = useRouter();
   const [fromDate, setFromDate] = useState<Date>(new Date());
   const [toDate, setToDate] = useState<Date>(new Date());
   const [fromDateOpen, setFromDateOpen] = useState(false);
@@ -49,18 +51,13 @@ export function AttendancePage({ onPageChange }: AttendanceSearchPageProps) {
   useEffect(() => {
     fetchStatus();
   }, []);
+  const handleNavigation = (type: 'checkin' | 'checkout') => {
+    if (onPageChange) onPageChange('attendance-record');
+    router.push(`/time-keeping?type=${type}`); // Truyền tham số vào URL
+  };
 
   return (
     <div className=" h-full bg-gray-100 flex flex-col ">
-      <div className="bg-[#658C58] text-white p-4 flex items-center gap-4">
-        <button className="hover:opacity-80">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-xl font-bold flex-1 text-center mr-10">
-          CHẤM CÔNG
-        </h1>
-      </div>
-
       <div className="p-4 bg-white">
         <div className="grid grid-cols-12 gap-4 items-end">
           <div className="col-span-5">
@@ -175,16 +172,16 @@ export function AttendancePage({ onPageChange }: AttendanceSearchPageProps) {
           );
         })}
       </div>
-      <div className="bg-background border-t border-border pt-4 flex gap-4 mt-6 bottom-0 left-0 right-0 sticky">
+      <div className="bg-background border-t border-border p-4 flex gap-4 bottom-0 left-0 right-0 sticky">
         <Button
-          onClick={() => onPageChange('attendance-record')}
-          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-6 text-base cursor-pointer rounded-lg"
+          onClick={() => handleNavigation('checkin')}
+          className="flex-1 bg-[#658C58] hover:bg-[#547549] text-white font-bold py-6 text-lg rounded-xl shadow-lg transition-all active:scale-95"
         >
           Chấm công vào
         </Button>
         <Button
-          onClick={() => onPageChange('attendance-record')}
-          className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-medium py-6 text-base cursor-pointer rounded-lg"
+          onClick={() => handleNavigation('checkout')}
+          className="flex-1 bg-[#BBC863] hover:bg-[#a6b358] text-white font-bold py-6 text-lg rounded-xl shadow-lg transition-all active:scale-95"
         >
           Chấm công ra
         </Button>
