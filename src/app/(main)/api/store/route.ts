@@ -27,7 +27,7 @@ export async function GET() {
       });
     }
     return NextResponse.json({
-      status: true,
+      status: false,
     });
   } catch (error) {
     console.error('Create attendance error:', error);

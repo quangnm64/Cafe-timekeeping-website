@@ -46,7 +46,7 @@ export default function FormLogin() {
       setLoading(true);
       const user = await axios.post('/api/auth/login', values);
       if (user.data.status) {
-        router.push('/time-keeping');
+        router.push('/attendance');
         setLoading(false);
       } else {
         alert('chưa tìm thấy tài khoản');

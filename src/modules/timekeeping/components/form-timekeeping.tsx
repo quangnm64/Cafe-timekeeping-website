@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { Clock, CheckCircle, Loader2, MapPin } from 'lucide-react';
+import { Clock, Loader2, MapPin } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/react-web-ui-shadcn/src/components/ui/card';
 import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
@@ -60,14 +60,10 @@ function TimekeepingContent() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 p-6 animate-in fade-in duration-500">
-      {/* Card Header: Thêm hiệu ứng Glow và bo góc mạnh hơn */}
-      <Card className="p-10 text-center bg-gradient-to-br from-[#658C58] to-[#31694E] text-white border-none shadow-[0_10px_30px_-10px_rgba(49,105,78,0.5)] rounded-3xl relative overflow-hidden">
+      <Card className="p-10 text-center bg-linear-to-br from-[#658C58] to-[#31694E] text-white border-none shadow-[0_10px_30px_-10px_rgba(49,105,78,0.5)] rounded-3xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
 
         <div className="flex flex-col items-center justify-center relative z-10">
-          <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md mb-4">
-            <Clock className="w-12 h-12 text-[#BBC863]" />
-          </div>
           <h2 className="text-3xl font-bold tracking-tight mb-2">
             Chấm Công Hệ Thống
           </h2>
@@ -89,7 +85,6 @@ function TimekeepingContent() {
         </div>
       </Card>
 
-      {/* Main Action Card: Nâng cấp Shadow và Animation */}
       <div className="max-w-md mx-auto">
         <Card className="p-8 border-none shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-[2.5rem] bg-white ring-1 ring-black/5">
           <div className="text-center space-y-8">
@@ -101,7 +96,7 @@ function TimekeepingContent() {
 
             <Button
               onClick={handleConfirm}
-              disabled={!status || isLoading}
+              // disabled={!status || isLoading}
               className={`w-full relative overflow-hidden h-20 rounded-2xl text-xl font-bold shadow-lg transition-all duration-300 active:scale-[0.98] ${
                 nextAction === 'checkin'
                   ? 'bg-[#658C58] hover:bg-[#31694E] shadow-[#658C58]/30'
@@ -118,7 +113,6 @@ function TimekeepingContent() {
                 XÁC NHẬN NGAY
               </span>
 
-              {/* Skeleton/Loading Overlay */}
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/5 backdrop-blur-[2px]">
                   <div className="flex items-center gap-3">
@@ -128,12 +122,6 @@ function TimekeepingContent() {
                 </div>
               )}
             </Button>
-
-            {!status && !isInitialLoading && (
-              <p className="text-orange-600 text-xs font-bold animate-bounce pt-2">
-                ⚠️ Vui lòng di chuyển vào đúng khu vực!
-              </p>
-            )}
           </div>
         </Card>
       </div>

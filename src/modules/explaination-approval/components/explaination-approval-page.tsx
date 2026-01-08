@@ -1,20 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
 import {
   Card,
   CardContent,
 } from '@/react-web-ui-shadcn/src/components/ui/card';
 import { Badge } from '@/react-web-ui-shadcn/src/components/ui/badge';
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  History,
-  Calendar,
-  Search,
-} from 'lucide-react';
+import { CheckCircle, XCircle, Calendar, Search } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,8 +21,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from '@/react-web-ui-shadcn/src/components/ui/dialog';
 import {
@@ -38,9 +29,46 @@ import {
   PopoverTrigger,
 } from '@/react-web-ui-shadcn/src/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/react-web-ui-shadcn/src/components/ui/calendar';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { format, isAfter, isBefore, startOfDay, subDays } from 'date-fns';
 import { Input } from '@/react-web-ui-shadcn/src/components/ui/input';
+import axios from 'axios';
+
+type ReportStatus = 'pending' | 'approved' | 'rejected';
+type FilterStatus = 'all' | ReportStatus;
+
+interface APIEmployee {
+  fullName: string;
+  citizenIdNumber: string;
+  currentAddress: string;
+  bankAccountNumber: string;
+}
+
+interface APIShift {
+  id: number;
+  shiftName: string;
+}
+
+interface APIWorkSchedule {
+  workDate: string;
+  shift: APIShift;
+}
+
+interface APIAttendance {
+  logTime: string;
+  logType: string;
+}
+
+interface APIDataItem {
+  id: number;
+  employeeId: number;
+  approvalStatus: string;
+  reason: string;
+  note: string;
+  workDate: string;
+  employee: APIEmployee;
+  workSchedule: APIWorkSchedule;
+  attendance?: APIAttendance;
+}
 
 interface ApprovalReport {
   id: string;
@@ -55,107 +83,117 @@ interface ApprovalReport {
   issue: string;
   newCode: string;
   explanation: string;
-  status: 'pending' | 'approved' | 'rejected';
-  reviewer?: string;
-  reviewDate?: string;
-  reviewNotes?: string;
+  status: ReportStatus;
 }
 
-const mockReports: ApprovalReport[] = [
-  {
-    id: '1',
-    employeeId: 'PL2115',
-    employeeName: 'Nguyễn Minh Quang',
-    address: '21 Ngô Gia Tư - KHA',
-    phone: '06183836',
-    reportDate: '21/12/2025',
-    shift: 'OFF',
-    actualHours1: '-',
-    actualHours2: '-',
-    issue: 'Ca: Đội/Chưa phân/Phân sai...',
-    newCode: '1133 Ca PLH',
-    explanation: 'Tôi muốn giải trình về ca làm việc của mình',
-    status: 'pending',
-  },
-  {
-    id: '2',
-    employeeId: 'PL2116',
-    employeeName: 'Trần Thị B',
-    address: 'Hà Nội',
-    phone: '0987654321',
-    reportDate: '20/12/2025',
-    shift: 'MORNING',
-    actualHours1: '8',
-    actualHours2: '-',
-    issue: 'Giờ làm không đúng',
-    newCode: '1100 Ca Sáng',
-    explanation: 'Có lý do khách quan ngăn không check in kịp thời',
-    status: 'approved',
-    reviewer: 'Lê Văn C',
-    reviewDate: '2024-12-20',
-    reviewNotes: 'Đã kiểm tra và xác nhận',
-  },
-  {
-    id: '3',
-    employeeId: 'PL2117',
-    employeeName: 'Phạm Văn D',
-    address: 'TP HCM',
-    phone: '0912345678',
-    reportDate: '19/12/2025',
-    shift: 'AFTERNOON',
-    actualHours1: '4',
-    actualHours2: '4',
-    issue: 'Bị trừ ca sai',
-    newCode: '1200 Ca Chiều',
-    explanation: 'Đã làm full ca nhưng hệ thống ghi nhận sai',
-    status: 'pending',
-  },
-  {
-    id: '4',
-    employeeId: 'PL2118',
-    employeeName: 'Hoàng Văn E',
-    address: 'Đà Nẵng',
-    phone: '0898765432',
-    reportDate: '18/12/2025',
-    shift: 'EVENING',
-    actualHours1: '6',
-    actualHours2: '2',
-    issue: 'Nhầm ca làm việc',
-    newCode: '1150 Ca Tối',
-    explanation: 'System ghi nhầm ca do lỗi kỹ thuật',
-    status: 'rejected',
-    reviewer: 'Nguyễn Văn F',
-    reviewDate: '2024-12-18',
-    reviewNotes: 'Không đủ chứng cứ',
-  },
-];
-
 export default function ExplainationApprovalPage() {
-  const [reports, setReports] = useState<ApprovalReport[]>(mockReports);
+  const [isMounted, setIsMounted] = useState(false);
+
+  const [reports, setReports] = useState<ApprovalReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<ApprovalReport | null>(
     null
   );
   const [modalOpen, setModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [dialogState, setDialogState] = useState<{
     open: boolean;
     action: 'approve' | 'reject' | null;
     reportId: string | null;
   }>({ open: false, action: null, reportId: null });
 
-  const [fromDate, setFromDate] = useState<Date>(new Date(2025, 11, 1));
-  const [toDate, setToDate] = useState<Date>(new Date(2025, 11, 31));
+  const today = new Date();
+  const tenDaysAgo = subDays(today, 10);
+
+  const [fromDate, setFromDate] = useState<Date>(tenDaysAgo);
+  const [toDate, setToDate] = useState<Date>(today);
   const [fromDateOpen, setFromDateOpen] = useState(false);
   const [toDateOpen, setToDateOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<
-    'all' | 'pending' | 'approved' | 'rejected'
-  >('all');
+  const [selectedStatus, setSelectedStatus] = useState<FilterStatus>('all');
   const [searchInput, setSearchInput] = useState<string>('');
+
   const [appliedFilters, setAppliedFilters] = useState({
-    fromDate: new Date(2025, 11, 1),
-    toDate: new Date(2025, 11, 31),
+    fromDate: tenDaysAgo,
+    toDate: today,
     search: '',
   });
-  const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    fetchStatus();
+  }, []);
+
+  const fetchStatus = async () => {
+    setIsLoading(true);
+    try {
+      const res = await axios.post('/api/explaination-approval', {
+        content: 'getdata',
+        fromDate: fromDate,
+        toDate: toDate,
+      });
+      const apiResult: APIDataItem[] = res.data.result;
+
+      const mappedData: ApprovalReport[] = apiResult.map(
+        (item: APIDataItem) => ({
+          id: item.id.toString(),
+          employeeId:
+            item.employee?.citizenIdNumber || item.employeeId.toString(),
+          employeeName: item.employee?.fullName || 'N/A',
+          address: item.employee?.currentAddress || 'N/A',
+          phone: item.employee?.bankAccountNumber || 'N/A',
+          reportDate: item.workDate
+            ? format(new Date(item.workDate), 'dd/MM/yyyy')
+            : 'N/A',
+          shift: item.workSchedule?.shift?.shiftName || 'N/A',
+          actualHours1: item.attendance?.logTime
+            ? format(new Date(item.attendance.logTime), 'HH:mm')
+            : '-',
+          actualHours2: '-',
+          issue: item.reason || 'N/A',
+          newCode: 'N/A',
+          explanation: item.note || 'N/A',
+          status:
+            item.approvalStatus === 'approved'
+              ? 'approved'
+              : item.approvalStatus === 'rejected'
+              ? 'rejected'
+              : 'pending',
+        })
+      );
+      console.log(mappedData);
+      setReports(mappedData);
+    } catch (err) {
+      console.error('Lỗi API:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectFromDate = (date: Date | undefined) => {
+    if (date) {
+      if (isAfter(startOfDay(date), startOfDay(toDate))) {
+        alert('Ngày bắt đầu không được lớn hơn ngày kết thúc!');
+        return;
+      }
+      setFromDate(date);
+      setFromDateOpen(false);
+    }
+  };
+
+  const handleSelectToDate = (date: Date | undefined) => {
+    if (date) {
+      if (isBefore(startOfDay(date), startOfDay(fromDate))) {
+        alert('Ngày kết thúc không được nhỏ hơn ngày bắt đầu!');
+        return;
+      }
+      setToDate(date);
+      setToDateOpen(false);
+    }
+  };
+
+  const handleSearch = () => {
+    setAppliedFilters({ fromDate, toDate, search: searchInput });
+    fetchStatus();
+  };
 
   const openConfirmDialog = (
     reportId: string,
@@ -164,152 +202,105 @@ export default function ExplainationApprovalPage() {
     setDialogState({ open: true, action, reportId });
   };
 
-  const handleConfirm = () => {
-    if (!dialogState.reportId || !dialogState.action) return;
+  const handleConfirm = async () => {
+    if (!selectedReport || !dialogState.action) return;
+    setIsLoading(true);
+    try {
+      const decisionValue =
+        dialogState.action === 'approve' ? 'approved' : 'rejected';
 
-    setReports(
-      reports.map((report) =>
-        report.id === dialogState.reportId
-          ? {
-              ...report,
-              status:
-                dialogState.action === 'approve' ? 'approved' : 'rejected',
-              reviewer: 'Admin Hiện tại',
-              reviewDate: new Date().toLocaleDateString('vi-VN'),
-              reviewNotes:
-                dialogState.action === 'approve' ? 'Đã duyệt' : 'Không duyệt',
-            }
-          : report
-      )
+      const response = await axios.post('/api/explaination-approval', {
+        content: 'approval',
+        id: Number(selectedReport.id),
+        decision: decisionValue,
+      });
+
+      if (response.status === 200) {
+        setReports((prev) =>
+          prev.map((r) =>
+            r.id === selectedReport.id
+              ? { ...r, status: decisionValue as ReportStatus }
+              : r
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Lỗi khi lưu vào database:', err);
+      alert('Lỗi kết nối server hoặc Enum không tồn tại!');
+    } finally {
+      setIsLoading(false);
+      setDialogState({ open: false, action: null, reportId: null });
+      setModalOpen(false);
+    }
+  };
+
+  const getStatusBadge = (status: ReportStatus) => {
+    const styles: Record<ReportStatus, string> = {
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      approved: 'bg-green-100 text-green-800 border-green-300',
+      rejected: 'bg-red-100 text-red-800 border-red-300',
+    };
+    const labels: Record<ReportStatus, string> = {
+      pending: 'Chờ duyệt',
+      approved: 'Đã duyệt',
+      rejected: 'Từ chối',
+    };
+    return (
+      <Badge className={`${styles[status]} border`}>{labels[status]}</Badge>
     );
-
-    setDialogState({ open: false, action: null, reportId: null });
-    setModalOpen(false);
   };
 
-  const getFilteredReports = () => {
-    return reports.filter((report) => {
-      const reportDateParts = report.reportDate.split('/');
-      const reportDateObj = new Date(
-        Number.parseInt(reportDateParts[2]),
-        Number.parseInt(reportDateParts[1]) - 1,
-        Number.parseInt(reportDateParts[0])
-      );
+  const filteredReports = reports.filter((report) => {
+    const matchesStatus =
+      selectedStatus === 'all' || report.status === selectedStatus;
+    const matchesSearch =
+      appliedFilters.search === '' ||
+      report.employeeId
+        .toLowerCase()
+        .includes(appliedFilters.search.toLowerCase()) ||
+      report.employeeName
+        .toLowerCase()
+        .includes(appliedFilters.search.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
-      const isInDateRange =
-        reportDateObj >= appliedFilters.fromDate &&
-        reportDateObj <= appliedFilters.toDate;
+  if (!isMounted) {
+    return (
+      <div className="space-y-4 p-4 max-w-7xl mx-auto animate-pulse">
+        <div className="h-32 bg-slate-100 rounded-xl" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-20 bg-slate-100 rounded-lg" />
+          ))}
+        </div>
+        <div className="h-64 bg-slate-50 rounded-xl" />
+      </div>
+    );
+  }
 
-      const matchesStatus =
-        selectedStatus === 'all' || report.status === selectedStatus;
-
-      const matchesSearch =
-        !hasSearched ||
-        appliedFilters.search === '' ||
-        report.employeeId
-          .toLowerCase()
-          .includes(appliedFilters.search.toLowerCase()) ||
-        report.employeeName
-          .toLowerCase()
-          .includes(appliedFilters.search.toLowerCase());
-
-      return isInDateRange && matchesStatus && matchesSearch;
-    });
-  };
-
-  const getStatusCountsForCards = () => {
-    return reports.filter((report) => {
-      const reportDateParts = report.reportDate.split('/');
-      const reportDateObj = new Date(
-        Number.parseInt(reportDateParts[2]),
-        Number.parseInt(reportDateParts[1]) - 1,
-        Number.parseInt(reportDateParts[0])
-      );
-
-      // Sửa ở đây: Dùng appliedFilters thay vì state trực tiếp
-      return (
-        reportDateObj >= appliedFilters.fromDate &&
-        reportDateObj <= appliedFilters.toDate
-      );
-    });
-  };
-
-  const filteredReports = getFilteredReports();
-  const dateFilteredReports = getStatusCountsForCards();
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300">
-            Chờ duyệt
-          </Badge>
-        );
-      case 'approved':
-        return (
-          <Badge className="bg-green-100 text-green-800 border border-green-300">
-            Đã duyệt
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge className="bg-red-100 text-red-800 border border-red-300">
-            Từ chối
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="w-4 h-4 text-yellow-600" />;
-      case 'approved':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'rejected':
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      default:
-        return null;
-    }
-  };
-  const handleSearch = () => {
-    setHasSearched(true);
-    setAppliedFilters({
-      fromDate: fromDate,
-      toDate: toDate,
-      search: searchInput,
-    });
-  };
   return (
-    <div className="space-y-3 cursor-default">
-      <Card className="bg-card border-border p-3">
-        <div className="grid grid-cols-12 gap-3 items-end">
+    <div className="space-y-4 p-4 cursor-default max-w-7xl mx-auto">
+      <Card className="p-4 shadow-sm">
+        <div className="grid grid-cols-12 gap-4 items-end">
           <div className="col-span-3">
-            <label className="block text-xs font-medium mb-1 text-foreground">
+            <label className="block text-xs font-bold mb-2 uppercase text-muted-foreground">
               Từ ngày
             </label>
             <Popover open={fromDateOpen} onOpenChange={setFromDateOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-between border-2 border-primary hover:bg-white font-normal bg-transparent hover:text-black cursor-pointer text-sm h-9"
+                  className="w-full justify-between border-2 border-primary/50 h-10"
                 >
-                  {format(fromDate, 'dd/MM/yyyy', { locale: vi })}
-                  <Calendar className="w-4 h-4 text-gray-400" />
+                  {format(fromDate, 'dd/MM/yyyy')}
+                  <Calendar className="w-4 h-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0">
                 <CalendarComponent
                   mode="single"
                   selected={fromDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setFromDate(date);
-                      setFromDateOpen(false);
-                    }
-                  }}
+                  onSelect={handleSelectFromDate}
                   initialFocus
                 />
               </PopoverContent>
@@ -317,29 +308,24 @@ export default function ExplainationApprovalPage() {
           </div>
 
           <div className="col-span-3">
-            <label className="block text-xs font-medium mb-1 text-foreground">
+            <label className="block text-xs font-bold mb-2 uppercase text-muted-foreground">
               Đến ngày
             </label>
             <Popover open={toDateOpen} onOpenChange={setToDateOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-between border-2 border-primary hover:bg-white font-normal bg-transparent hover:text-black cursor-pointer text-sm h-9"
+                  className="w-full justify-between border-2 border-primary/50 h-10"
                 >
-                  {format(toDate, 'dd/MM/yyyy', { locale: vi })}
-                  <Calendar className="w-4 h-4 text-gray-400" />
+                  {format(toDate, 'dd/MM/yyyy')}
+                  <Calendar className="w-4 h-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0">
                 <CalendarComponent
                   mode="single"
                   selected={toDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setToDate(date);
-                      setToDateOpen(false);
-                    }
-                  }}
+                  onSelect={handleSelectToDate}
                   initialFocus
                 />
               </PopoverContent>
@@ -347,275 +333,186 @@ export default function ExplainationApprovalPage() {
           </div>
 
           <div className="col-span-4">
-            <label className="block text-xs font-medium mb-1 text-foreground">
-              Mã NV / Tên
+            <label className="block text-xs font-bold mb-2 uppercase text-muted-foreground">
+              Tìm kiếm nhân viên
             </label>
             <Input
-              placeholder="Nhập mã hoặc tên..."
+              placeholder="Mã NV hoặc Họ tên..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="border-2 border-primary bg-transparent text-foreground placeholder:text-muted-foreground cursor-text text-sm h-9"
+              className="border-2 border-primary/50 h-10"
             />
           </div>
 
           <div className="col-span-2">
             <Button
               onClick={handleSearch}
-              className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground font-semibold h-9 rounded-lg shadow-md transition-all cursor-pointer text-sm"
+              disabled={isLoading}
+              className="w-full h-10 bg-secondary hover:bg-secondary/90 text-white font-bold"
             >
-              <Search className="w-3 h-3 mr-1" />
-              Tìm
+              <Search className="w-4 h-4 mr-2" />{' '}
+              {isLoading ? 'ĐANG TẢI...' : 'TÌM KIẾM'}
             </Button>
           </div>
         </div>
       </Card>
 
-      <div className="grid grid-cols-4 gap-2">
-        <Card
-          onClick={() => setSelectedStatus('all')}
-          className={`bg-card border-2 cursor-pointer transition-all ${
-            selectedStatus === 'all'
-              ? 'border-secondary shadow-md'
-              : 'border-border hover:border-secondary/50'
-          }`}
-        >
-          <CardContent className="pt-3 pb-3 px-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-foreground">
-                {dateFilteredReports.length}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Tất cả</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          onClick={() => setSelectedStatus('pending')}
-          className={`bg-card border-2 cursor-pointer transition-all ${
-            selectedStatus === 'pending'
-              ? 'border-yellow-500 shadow-md'
-              : 'border-border hover:border-yellow-300'
-          }`}
-        >
-          <CardContent className="pt-3 pb-3 px-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {
-                  dateFilteredReports.filter((r) => r.status === 'pending')
-                    .length
-                }
-              </div>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
-                Chờ duyệt
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          onClick={() => setSelectedStatus('approved')}
-          className={`bg-card border-2 cursor-pointer transition-all ${
-            selectedStatus === 'approved'
-              ? 'border-green-600 shadow-md'
-              : 'border-border hover:border-green-400'
-          }`}
-        >
-          <CardContent className="pt-3 pb-3 px-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {
-                  dateFilteredReports.filter((r) => r.status === 'approved')
-                    .length
-                }
-              </div>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
-                Đã duyệt
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          onClick={() => setSelectedStatus('rejected')}
-          className={`bg-card border-2 cursor-pointer transition-all ${
-            selectedStatus === 'rejected'
-              ? 'border-red-600 shadow-md'
-              : 'border-border hover:border-red-400'
-          }`}
-        >
-          <CardContent className="pt-3 pb-3 px-3">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {
-                  dateFilteredReports.filter((r) => r.status === 'rejected')
-                    .length
-                }
-              </div>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
-                Từ chối
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-4 gap-4">
+        {(
+          [
+            {
+              id: 'all',
+              label: 'Tất cả',
+              color: 'border-slate-300',
+              text: 'text-slate-700',
+            },
+            {
+              id: 'pending',
+              label: 'Chờ duyệt',
+              color: 'border-yellow-400',
+              text: 'text-yellow-600',
+            },
+            {
+              id: 'approved',
+              label: 'Đã duyệt',
+              color: 'border-green-500',
+              text: 'text-green-600',
+            },
+            {
+              id: 'rejected',
+              label: 'Từ chối',
+              color: 'border-red-500',
+              text: 'text-red-600',
+            },
+          ] as const
+        ).map((stat) => (
+          <Card
+            key={stat.id}
+            onClick={() => setSelectedStatus(stat.id)}
+            className={`cursor-pointer transition-all border-l-4 ${
+              stat.color
+            } ${
+              selectedStatus === stat.id
+                ? 'bg-slate-50 shadow-md scale-[1.02]'
+                : 'hover:bg-slate-50'
+            }`}
+          >
+            <CardContent className="p-4 flex flex-col items-center">
+              <span className={`text-2xl font-black ${stat.text}`}>
+                {stat.id === 'all'
+                  ? reports.length
+                  : reports.filter((r) => r.status === stat.id).length}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground mt-1">
+                {stat.label}
+              </span>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <Card className="bg-card border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Mã NV
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Tên
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Ngày
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Trạng thái
-                </th>
+      <Card className="overflow-hidden border-none shadow-sm">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-y">
+            <tr>
+              <th className="px-4 py-3 text-left font-bold text-slate-600 uppercase text-[11px]">
+                Mã Nhân Viên
+              </th>
+              <th className="px-4 py-3 text-left font-bold text-slate-600 uppercase text-[11px]">
+                Họ và Tên
+              </th>
+              <th className="px-4 py-3 text-left font-bold text-slate-600 uppercase text-[11px]">
+                Ngày Giải Trình
+              </th>
+              <th className="px-4 py-3 text-center font-bold text-slate-600 uppercase text-[11px]">
+                Trạng Thái
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {filteredReports.map((report) => (
+              <tr
+                key={report.id}
+                onClick={() => {
+                  setSelectedReport(report);
+                  setModalOpen(true);
+                }}
+                className="hover:bg-blue-50/30 cursor-pointer transition-colors"
+              >
+                <td className="px-4 py-4 font-bold text-primary">
+                  {report.employeeId}
+                </td>
+                <td className="px-4 py-4 font-medium">{report.employeeName}</td>
+                <td className="px-4 py-4 text-muted-foreground">
+                  {report.reportDate}
+                </td>
+                <td className="px-4 py-4 text-center">
+                  {getStatusBadge(report.status)}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredReports.map((report) => (
-                <tr
-                  key={report.id}
-                  onClick={() => {
-                    setSelectedReport(report);
-                    setModalOpen(true);
-                  }}
-                  className="border-b border-border hover:bg-muted/30 cursor-pointer transition-colors"
-                >
-                  <td className="px-4 py-3 text-sm font-medium text-foreground">
-                    {report.employeeId}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-foreground truncate">
-                    {report.employeeName}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {report.reportDate}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      {getStatusIcon(report.status)}
-                      {getStatusBadge(report.status)}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </Card>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
+        <DialogContent className="max-w-2xl bg-white p-0 overflow-hidden border-none">
           {selectedReport && (
             <>
-              <DialogHeader>
-                <div className="flex items-center justify-between gap-4">
+              <div className="bg-slate-900 p-6 text-white">
+                <div className="flex justify-between items-start">
                   <div>
-                    <DialogTitle className="text-foreground">
-                      TÔNG ({selectedReport.id})
+                    <p className="text-slate-400 text-xs uppercase font-bold tracking-widest mb-1">
+                      Chi tiết giải trình
+                    </p>
+                    <DialogTitle className="text-2xl font-black">
+                      ID: {selectedReport.id}
                     </DialogTitle>
-                    <DialogDescription className="text-muted-foreground">
+                  </div>
+                  {getStatusBadge(selectedReport.status)}
+                </div>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 p-4 rounded-xl border">
+                  <div>
+                    <p className="text-muted-foreground mb-1">Nhân viên</p>
+                    <p className="font-bold">
+                      {selectedReport.employeeId} -{' '}
                       {selectedReport.employeeName}
-                    </DialogDescription>
-                  </div>
-                  <div>{getStatusBadge(selectedReport.status)}</div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-4 py-3">
-                <div className="space-y-2 text-sm">
-                  <p className="font-semibold text-foreground">
-                    {selectedReport.employeeId} - {selectedReport.employeeName}
-                  </p>
-                  <p className="text-foreground">
-                    Ngày: {selectedReport.reportDate}
-                  </p>
-                  <p className="text-foreground">Ca: {selectedReport.shift}</p>
-                  <p className="text-foreground">
-                    Công thực tế 1: {selectedReport.actualHours1}
-                  </p>
-                  <p className="text-foreground">
-                    Công thực tế 2: {selectedReport.actualHours2}
-                  </p>
-                </div>
-
-                <div className="border-t border-border pt-3 space-y-2">
-                  <div className="bg-blue-50 p-2 rounded border border-blue-200">
-                    <p className="text-xs font-semibold text-blue-900 uppercase mb-1">
-                      Vấn đề
-                    </p>
-                    <p className="text-sm text-blue-900">
-                      {selectedReport.issue}
                     </p>
                   </div>
-                  <div className="bg-blue-50 p-2 rounded border border-blue-200">
-                    <p className="text-xs font-semibold text-blue-900 uppercase mb-1">
-                      Mã mới
-                    </p>
-                    <p className="text-sm text-blue-900">
-                      {selectedReport.newCode}
+                  <div>
+                    <p className="text-muted-foreground mb-1">Ngày làm việc</p>
+                    <p className="font-bold">
+                      {selectedReport.reportDate} ({selectedReport.shift})
                     </p>
                   </div>
                 </div>
-
-                <div className="border-t border-border pt-3 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">
-                    Trạng thái: Đã giải trình
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase">
+                    Nội dung giải trình (Lý do & Ghi chú)
                   </p>
-                  <p className="text-sm text-foreground italic">
-                    {selectedReport.explanation}
+                  <p className="text-sm bg-white border p-4 rounded-xl italic shadow-sm">
+                    {selectedReport.issue} - {selectedReport.explanation}
                   </p>
                 </div>
-
-                {selectedReport.status !== 'pending' && (
-                  <div className="border-t border-border pt-3 bg-secondary/10 p-2 rounded space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">
-                      Trạng thái:{' '}
-                      <span className="text-secondary font-normal">
-                        {selectedReport.status === 'approved'
-                          ? 'Đã duyệt'
-                          : 'Từ chối'}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Người duyệt: {selectedReport.reviewer} (
-                      {selectedReport.reviewDate})
-                    </p>
-                  </div>
-                )}
-
                 {selectedReport.status === 'pending' && (
-                  <div className="border-t border-border pt-3 flex gap-2">
+                  <div className="flex gap-3 pt-4 border-t">
                     <Button
-                      variant="outline"
-                      className="border-primary text-primary hover:bg-primary/20 flex-1 bg-transparent cursor-pointer transition-colors text-sm h-9"
+                      onClick={() =>
+                        openConfirmDialog(selectedReport.id, 'reject')
+                      }
+                      className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold"
                     >
-                      <History className="w-3 h-3 mr-2" />
-                      Lịch sử
+                      <XCircle className="mr-2 w-4 h-4" /> Từ chối
                     </Button>
                     <Button
                       onClick={() =>
                         openConfirmDialog(selectedReport.id, 'approve')
                       }
-                      className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer transition-colors text-sm h-9"
+                      className="flex-1 h-12 bg-secondary hover:bg-secondary/90 text-white font-bold"
                     >
-                      <CheckCircle className="w-3 h-3 mr-2" />
-                      Duyệt
-                    </Button>
-                    <Button
-                      onClick={() =>
-                        openConfirmDialog(selectedReport.id, 'reject')
-                      }
-                      className="flex-1 bg-red-600 text-white hover:bg-red-700 cursor-pointer transition-colors text-sm h-9"
-                    >
-                      <XCircle className="w-3 h-3 mr-2" />
-                      Không duyệt
+                      <CheckCircle className="mr-2 w-4 h-4" /> Phê duyệt
                     </Button>
                   </div>
                 )}
@@ -627,35 +524,34 @@ export default function ExplainationApprovalPage() {
 
       <AlertDialog
         open={dialogState.open}
-        onOpenChange={(open) => {
-          if (!open)
-            setDialogState({ open: false, action: null, reportId: null });
-        }}
+        onOpenChange={(open) =>
+          !open && setDialogState({ open: false, action: null, reportId: null })
+        }
       >
-        <AlertDialogContent className="bg-card border-border">
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">
-              Xác nhận {dialogState.action === 'approve' ? 'Duyệt' : 'Từ chối'}
+            <AlertDialogTitle className="text-xl font-bold">
+              Xác nhận{' '}
+              {dialogState.action === 'approve' ? 'Phê duyệt' : 'Từ chối'}?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Bạn có chắc chắn muốn{' '}
-              {dialogState.action === 'approve' ? 'duyệt' : 'từ chối'} báo cáo
-              này? Hành động này không thể được hoàn tác.
+            <AlertDialogDescription>
+              Bạn đang thực hiện thay đổi trạng thái cho báo cáo của{' '}
+              <b>{selectedReport?.employeeName}</b>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="cursor-pointer hover:bg-muted">
-              Hủy
+            <AlertDialogCancel className="font-bold border-2 text-slate-600">
+              QUAY LẠI
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirm}
-              className={`cursor-pointer ${
+              className={`font-bold text-white ${
                 dialogState.action === 'approve'
-                  ? 'bg-secondary hover:bg-secondary/80'
+                  ? 'bg-secondary hover:bg-secondary/90'
                   : 'bg-red-600 hover:bg-red-700'
               }`}
             >
-              Xác nhận
+              XÁC NHẬN
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

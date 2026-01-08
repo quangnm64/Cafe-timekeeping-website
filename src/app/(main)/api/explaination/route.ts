@@ -1,3 +1,4 @@
+import { shift } from '@/constants/shift';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -24,6 +25,15 @@ async function getdata(from: Date, to: Date) {
           lte: new Date(format(to, 'yyyy-MM-dd') + 'T23:59:59Z'),
         },
       },
+      include: {
+        employee: true,
+        workSchedule: {
+          include: {
+            shift: true,
+          },
+        },
+        attendance: true,
+      },
     });
     return NextResponse.json({
       status: true,
@@ -42,8 +52,10 @@ async function submit(
   notes: string,
   explanationStatus: string,
   startTime: string,
-  endTime: string
+  endTime: string,
+  workDate: string
 ) {
+  console.log(`${format(workDate, 'dd/MM/yyyy')}T${startTime}:00+07:00`);
   const records = await prisma.attendanceExplanation.update({
     where: {
       id: id,
@@ -53,8 +65,12 @@ async function submit(
       note: notes,
       explanationStatus: 'YES',
       proposedShiftId: parseInt(shiftCode),
-      // proposedCheckInTime: new Date(startTime),
-      // proposedCheckOutTime: new Date(endTime),
+      proposedCheckInTime: new Date(
+        `${format(workDate, 'yyyy-MM-dd')}T${startTime}+07:00`
+      ),
+      proposedCheckOutTime: new Date(
+        `${format(workDate, 'yyyy-MM-dd')}T${endTime}+07:00`
+      ),
     },
   });
   if (records) {
@@ -66,7 +82,25 @@ async function submit(
     status: 'Chỉnh sửa không thành công',
   });
 }
-
+async function sent(id: number) {
+  const result = await prisma.attendanceExplanation.update({
+    where: {
+      id: id,
+    },
+    data: {
+      submissionStatus: 'YES',
+      approvalStatus: 'NO',
+    },
+  });
+  if (result) {
+    return NextResponse.json({
+      status: 'Nộp đơn thành công',
+    });
+  }
+  return NextResponse.json({
+    status: 'Nộp đơn không thành công',
+  });
+}
 export async function POST(req: Request) {
   const request = await req.json();
   if (request.content === 'getData') {
@@ -80,8 +114,12 @@ export async function POST(req: Request) {
       request.notes,
       request.explanationStatus,
       request.startTime,
-      request.endTime
+      request.endTime,
+      request.workDate
     );
+  }
+  if (request.content === 'sent') {
+    return sent(request.id);
   }
   return NextResponse.json({
     status: true,

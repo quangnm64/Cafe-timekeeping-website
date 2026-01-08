@@ -19,6 +19,7 @@ export default function MainLayout({
     | 'arrange-schedule'
     | 'staff-management'
     | 'explaination-approval-management'
+    | 'personal-account-profile'
   >('timekeeping');
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
@@ -30,7 +31,7 @@ export default function MainLayout({
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6 space-y-6">{children}</main>
         <footer className="bg-[#31694E] text-white py-3 px-6 text-center text-sm">
-          Lorem Ipsum is simply dummy
+          Trường Đại học Nha Trang
         </footer>
       </div>
     </div>

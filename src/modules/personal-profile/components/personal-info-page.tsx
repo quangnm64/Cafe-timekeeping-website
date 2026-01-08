@@ -18,10 +18,7 @@ export function PersonalInfoPage() {
   return (
     <div className="w-full h-full flex flex-col">
       <div className="bg-[#658C58] text-white p-6 flex items-center justify-between">
-        <button className="p-2 hover:bg-[#31694E] rounded-lg transition-colors">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-xl font-bold absolute left-1/2 transform -translate-x-1/2">
+        <h1 className="text-xl font-bold absolute left-1/2 transform -translate-x-1/2 p-10">
           THÔNG TIN CÁ NHÂN
         </h1>
         <div className="w-10"></div>

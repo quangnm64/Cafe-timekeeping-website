@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Tabs,
   TabsContent,
@@ -17,7 +17,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/react-web-ui-shadcn/src/components/ui/dialog';
 import {
   AlertDialog,
@@ -25,6 +24,7 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/react-web-ui-shadcn/src/components/ui/alert-dialog';
@@ -33,155 +33,493 @@ import {
   Trash2,
   Plus,
   Search,
-  Lock,
   ChevronLeft,
   ChevronRight,
+  User,
+  GraduationCap,
+  Building2,
+  CreditCard,
+  MapPin,
+  Calendar,
+  RotateCcw,
+  Save,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/react-web-ui-shadcn/src/components/ui/button';
+import axios from 'axios';
+import { ScrollArea } from '@/react-web-ui-shadcn/src/components/ui/scroll-area';
+import { format } from 'date-fns';
 
+// --- Interfaces ---
 interface Employee {
-  id: string;
-  employeeCode: string;
-  name: string;
-  position: string;
-  phone: string;
-  store: string;
-  email: string;
+  id: number;
+  fullName: string;
+  citizenIdNumber: string;
+  gender: string;
+  dateOfBirth: string;
+  currentAddress: string;
+  bankName: string;
+  bankAccountNumber: string;
+  hireDate: string;
+  university: string;
+  major: string;
+  storeId: number;
+  positionId: number;
+}
+
+interface DetailRowProps {
+  label: string;
+  value: string | number;
+  icon?: React.ElementType;
+}
+
+function DetailRow({ label, value, icon: Icon }: DetailRowProps) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5 text-[#658C58]/60" />} {label}
+      </span>
+      <span className="text-sm font-semibold text-slate-700">
+        {value || '---'}
+      </span>
+    </div>
+  );
 }
 
 export function SuperAdminPage() {
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      id: '1',
-      employeeCode: 'EMP001',
-      name: 'Nguyễn Văn A',
-      position: 'Nhân viên bán hàng',
-      phone: '0912345678',
-      store: 'Cửa hàng 1',
-      email: 'nva@example.com',
-    },
-    {
-      id: '2',
-      employeeCode: 'EMP002',
-      name: 'Trần Thị B',
-      position: 'Quản lý',
-      phone: '0923456789',
-      store: 'Cửa hàng 2',
-      email: 'ttb@example.com',
-    },
-    {
-      id: '3',
-      employeeCode: 'EMP003',
-      name: 'Lê Văn C',
-      position: 'Kế toán',
-      phone: '0934567890',
-      store: 'Cửa hàng 1',
-      email: 'lvc@example.com',
-    },
-    {
-      id: '4',
-      employeeCode: 'EMP004',
-      name: 'Phạm Thị D',
-      position: 'Nhân viên bán hàng',
-      phone: '0945678901',
-      store: 'Cửa hàng 2',
-      email: 'ptd@example.com',
-    },
-    {
-      id: '5',
-      employeeCode: 'EMP005',
-      name: 'Đặng Văn E',
-      position: 'Giám đốc',
-      phone: '0956789012',
-      store: 'Cửa hàng 3',
-      email: 'dve@example.com',
-    },
-    {
-      id: '6',
-      employeeCode: 'EMP006',
-      name: 'Đặng Văn E',
-      position: 'Giám đốc',
-      phone: '0956789012',
-      store: 'Cửa hàng 3',
-      email: 'dve@example.com',
-    },
-  ]);
-
+  const [isMounted, setIsMounted] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [targetEmpId, setTargetEmpId] = useState<number | null>(null);
+  // Quản lý màn hình hiển thị: 'list' (danh sách) hoặc 'edit' (chỉnh sửa)
+  const [currentView, setCurrentView] = useState<'list' | 'edit'>('list');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
+
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [editData, setEditData] = useState<Employee | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
+  const fetchEmployees = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await axios.get('/api/staff-management');
+      setEmployees(res.data.result || []);
+      console.log(res.data.result);
+    } catch (err) {
+      console.error('Error fetching employees:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setIsMounted(true);
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  if (!isMounted) return null;
+
+  // --- Logic Xử lý Dữ liệu ---
   const itemsPerPage = 5;
-
   const filteredEmployees = employees.filter(
     (emp) =>
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.employeeCode.toLowerCase().includes(searchTerm.toLowerCase())
+      emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.citizenIdNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage) || 1;
   const paginatedEmployees = filteredEmployees.slice(
-    startIndex,
-    startIndex + itemsPerPage
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
 
-  const handleDelete = (id: string) => {
-    setEmployees(employees.filter((emp) => emp.id !== id));
-    setDeleteConfirm(null);
+  const resetPassword = async (id: number) => {
+    try {
+      const result = await axios.post('/api/staff-management', {
+        content: 'reset-password',
+        id: id,
+      });
+      alert(result.data.message);
+    } catch (err) {
+      console.error(err);
+    }
   };
+  const handleConfirmReset = async (id: number) => {
+    setIsResetDialogOpen(false); // Đóng dialog ngay
+    setProcessingId(id); // Bắt đầu trạng thái Loading cho dòng này
 
-  const handleEditSave = () => {
-    if (editData) {
-      setEmployees(
-        employees.map((emp) => (emp.id === editData.id ? editData : emp))
-      );
-      setIsEditModalOpen(false);
-      setEditData(null);
+    try {
+      const result = await axios.post('/api/staff-management', {
+        content: 'reset-password',
+        id: id,
+        newPassword: '123456789', // Gửi kèm mật khẩu mặc định nếu server cần
+      });
+
+      if (result.data.status) {
+        // Có thể dùng toast thay alert cho đẹp
+        alert('Thành công: ' + result.data.message);
+      }
+    } catch (err) {
+      console.error('Lỗi Reset:', err);
+      alert('Có lỗi xảy ra khi reset mật khẩu.');
+    } finally {
+      setProcessingId(null); // Tắt loading, trả lại nút cho user
+      setTargetEmpId(null);
+    }
+  };
+  // const handleDelete = async (id: number) => {
+  //   if (!selectedEmployee) return;
+
+  //   try {
+  //     setIsLoading(true);
+
+  //     const response = await axios.post('/api/staff-management', {
+  //       content: 'delete-staff',
+  //       id: selectedEmployee.id,
+  //     });
+
+  //     if (response.data && response.data.status === true) {
+  //       const updatedDataFromServer = response.data.result;
+
+  //       setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+  //       setDeleteConfirmId(null);
+
+  //       console.log('Dữ liệu đã đồng bộ từ server:', updatedDataFromServer);
+  //       setCurrentView('list');
+  //       alert(response.data.message);
+  //     } else {
+  //       alert(response.data.message || 'Cập nhật thất bại');
+  //     }
+  //   } catch (err) {
+  //     alert('Lỗi kết nối server hoặc lỗi hệ thống.');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  const handleSaveEdit = async () => {
+    if (!selectedEmployee) return;
+
+    try {
+      setIsLoading(true);
+
+      const response = await axios.post('/api/staff-management', {
+        content: 'edit-staff',
+        data: selectedEmployee,
+      });
+
+      if (response.data && response.data.status === true) {
+        const updatedDataFromServer = response.data.result;
+
+        setEmployees((prev) =>
+          prev.map((emp) =>
+            emp.id === selectedEmployee.id ? updatedDataFromServer : emp
+          )
+        );
+
+        console.log('Dữ liệu đã đồng bộ từ server:', updatedDataFromServer);
+        setCurrentView('list');
+        alert(response.data.message);
+      } else {
+        alert(response.data.message || 'Cập nhật thất bại');
+      }
+    } catch (err) {
+      alert('Lỗi kết nối server hoặc lỗi hệ thống.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleViewDetails = (emp: Employee) => {
-    setSelectedEmployee(emp);
-    setIsDetailModalOpen(true);
-  };
+  if (currentView === 'edit' && selectedEmployee) {
+    const handleChange = (
+      field: keyof Employee | string,
+      value: string | number
+    ) => {
+      setSelectedEmployee({
+        ...selectedEmployee,
+        [field]: value,
+      });
+    };
 
-  const handleEditClick = (emp: Employee) => {
-    setEditData({ ...emp });
-    setIsEditModalOpen(true);
-    setIsDetailModalOpen(false);
-  };
+    return (
+      <div className="p-6 max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="flex items-center justify-between border-b pb-4 bg-white sticky top-0 z-10 p-3 rounded">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentView('list')}
+              className="rounded-full w-10 h-10 p-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold text-[#658C58]">
+                CHỈNH SỬA NHÂN VIÊN
+              </h2>
+              <p className="text-sm text-muted-foreground font-medium">
+                Đang chỉnh sửa hồ sơ của: {selectedEmployee.fullName}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentView('list')}
+              className="px-6 font-semibold"
+            >
+              HỦY BỎ
+            </Button>
+            <Button
+              className="bg-[#658C58] hover:bg-[#658C58]/90 text-white px-8 font-semibold"
+              onClick={handleSaveEdit}
+            >
+              <Save className="w-4 h-4 mr-2" /> LƯU THAY ĐỔI
+            </Button>
+          </div>
+        </div>
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Quản trị Super Admin</h1>
-        <p className="text-muted-foreground mt-1">
-          Quản lý nhân viên, duyệt giải trình, và đặt lại mật khẩu
-        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card className="shadow-sm border-t-4 border-t-[#658C58]">
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-bold text-slate-700 uppercase text-xs tracking-wider mb-4 flex items-center gap-2">
+                <User className="w-4 h-4 text-[#658C58]" /> Định danh & Cá nhân
+              </h3>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Họ và tên
+                  </label>
+                  <Input
+                    value={selectedEmployee.fullName || ''}
+                    onChange={(e) => handleChange('fullName', e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Giới tính
+                    </label>
+                    <select
+                      className="w-full border rounded-md h-10 px-3 text-sm focus:ring-2 focus:ring-[#658C58]/20 outline-none"
+                      value={selectedEmployee.gender || ''}
+                      onChange={(e) => handleChange('gender', e.target.value)}
+                    >
+                      <option value="male">Nam</option>
+                      <option value="female">Nữ</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Ngày sinh
+                    </label>
+                    <Input
+                      type="date"
+                      value={selectedEmployee.dateOfBirth || ''}
+                      onChange={(e) =>
+                        handleChange('dateOfBirth', e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Số CCCD
+                  </label>
+                  <Input
+                    value={selectedEmployee.citizenIdNumber || ''}
+                    onChange={(e) =>
+                      handleChange('citizenIdNumber', e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Ngày cấp
+                    </label>
+                    <Input type="date" defaultValue="2015-01-11" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Nơi cấp
+                    </label>
+                    <Input defaultValue="Ho Chi Minh City" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Quốc tịch
+                    </label>
+                    <Input defaultValue="Vietnamese" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Dân tộc
+                    </label>
+                    <Input defaultValue="Kinh" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Tôn giáo
+                    </label>
+                    <Input defaultValue="None" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* CỘT 2: ĐỊA CHỈ & HỌC VẤN */}
+          <Card className="shadow-sm border-t-4 border-t-[#658C58]">
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-bold text-slate-700 uppercase text-xs tracking-wider mb-4 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#658C58]" /> Địa chỉ & Học vấn
+              </h3>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Địa chỉ thường trú
+                  </label>
+                  <Input
+                    value={selectedEmployee.currentAddress || ''}
+                    onChange={(e) =>
+                      handleChange('currentAddress', e.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Địa chỉ hiện tại
+                  </label>
+                  <Input defaultValue="Current Address 1" />
+                </div>
+
+                <div className="pt-4 border-t space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Trình độ học vấn
+                    </label>
+                    <Input defaultValue="Bachelor" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Chuyên ngành
+                    </label>
+                    <Input
+                      value={selectedEmployee.major || ''}
+                      onChange={(e) => handleChange('major', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase text-slate-500">
+                      Trường đào tạo
+                    </label>
+                    <Input
+                      value={selectedEmployee.university || ''}
+                      onChange={(e) =>
+                        handleChange('university', e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* CỘT 3: CÔNG VIỆC & TÀI CHÍNH */}
+          <Card className="shadow-sm border-t-4 border-t-[#658C58]">
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-bold text-slate-700 uppercase text-xs tracking-wider mb-4 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#658C58]" /> Công việc &
+                Tài chính
+              </h3>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Ngày vào làm
+                  </label>
+                  <Input
+                    type="date"
+                    value={
+                      format(selectedEmployee.hireDate, 'yyyy-MM-dd') || ''
+                    }
+                    onChange={(e) => handleChange('hireDate', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Ngân hàng
+                  </label>
+                  <Input
+                    value={selectedEmployee.bankName || ''}
+                    onChange={(e) => handleChange('bankName', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Số tài khoản
+                  </label>
+                  <Input
+                    value={selectedEmployee.bankAccountNumber || ''}
+                    onChange={(e) =>
+                      handleChange('bankAccountNumber', e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Mã số thuế
+                  </label>
+                  <Input defaultValue="TAX000001" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase text-slate-500">
+                    Cửa hàng ID (Cơ sở làm việc)
+                  </label>
+                  <Input
+                    type="number"
+                    value={selectedEmployee.storeId || 0}
+                    onChange={(e) =>
+                      handleChange('storeId', parseInt(e.target.value) || 0)
+                    }
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+    );
+  }
 
+  // --- GIAO DIỆN DANH SÁCH (MẶC ĐỊNH) ---
+  return (
+    <div className="p-6 space-y-6">
       <Tabs defaultValue="employees" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="employees" className="cursor-pointer">
-            Quản lý nhân viên
-          </TabsTrigger>
-          <TabsTrigger value="approvals" className="cursor-pointer">
-            Duyệt giải trình
-          </TabsTrigger>
-          <TabsTrigger value="password" className="cursor-pointer">
-            Đặt lại mật khẩu
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+          <TabsTrigger value="employees">Quản lý nhân viên</TabsTrigger>
+          <TabsTrigger value="password">Đặt lại mật khẩu</TabsTrigger>
         </TabsList>
 
         <TabsContent value="employees" className="space-y-4">
@@ -189,7 +527,7 @@ export function SuperAdminPage() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Tìm kiếm theo tên hoặc mã nhân viên..."
+                placeholder="Tìm kiếm theo tên hoặc CCCD..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -198,370 +536,344 @@ export function SuperAdminPage() {
                 className="pl-10"
               />
             </div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 cursor-pointer">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Thêm nhân viên
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="cursor-pointer">
-                <DialogHeader>
-                  <DialogTitle>Thêm nhân viên mới</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Input placeholder="Tên nhân viên" />
-                  <Input placeholder="Mã nhân viên" />
-                  <Input placeholder="Chức vụ" />
-                  <Input placeholder="Số điện thoại" />
-                  <Input placeholder="Email" />
-                  <select className="w-full px-3 py-2 border rounded-md cursor-pointer">
-                    <option>Chọn cửa hàng</option>
-                    <option>Cửa hàng 1</option>
-                    <option>Cửa hàng 2</option>
-                  </select>
-                  <Button className="w-full bg-primary hover:bg-primary/90 cursor-pointer">
-                    Tạo nhân viên
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button className="bg-[#658C58] hover:bg-[#658C58]/90">
+              <Plus className="w-4 h-4 mr-2" /> Thêm nhân viên
+            </Button>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-muted border-b">
+          <Card className="overflow-hidden bg-white border shadow-sm">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">
-                    Tên
+                  <th className="px-4 py-4 text-left font-bold text-slate-600 uppercase text-[11px]">
+                    Nhân viên
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">
-                    Mã NV
+                  <th className="px-4 py-4 text-left font-bold text-slate-600 uppercase text-[11px]">
+                    Số CCCD
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">
-                    Cửa hàng
+                  <th className="px-4 py-4 text-left font-bold text-slate-600 uppercase text-[11px]">
+                    Cửa hàng ID
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold"></th>
+                  <th className="px-4 py-4 text-right font-bold text-slate-600 uppercase text-[11px]">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="py-20 text-center text-muted-foreground"
+                    >
+                      Đang tải dữ liệu...
+                    </td>
+                  </tr>
+                ) : paginatedEmployees.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="py-20 text-center text-muted-foreground"
+                    >
+                      Không tìm thấy nhân viên nào.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedEmployees.map((emp) => (
+                    <tr
+                      key={emp.id}
+                      onClick={() => {
+                        setSelectedEmployee(emp);
+                        setIsDetailModalOpen(true);
+                      }}
+                      className="border-b hover:bg-[#658C58]/5 cursor-pointer transition-colors group"
+                    >
+                      <td className="px-4 py-3.5 font-semibold text-slate-700">
+                        {emp.fullName}
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground font-mono">
+                        {emp.citizenIdNumber}
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground">
+                        Store #{emp.storeId}
+                      </td>
+                      <td
+                        className="px-4 py-3.5 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-[#658C58] hover:bg-[#658C58] hover:text-white"
+                            onClick={() => {
+                              setSelectedEmployee(emp);
+                              setCurrentView('edit');
+                            }}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          {/* <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:bg-destructive hover:text-white"
+                            onClick={() => setDeleteConfirmId(emp.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button> */}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </Card>
+        </TabsContent>
+
+        {/* Tab Đặt lại mật khẩu (Giữ cấu trúc bảng của bạn) */}
+        <TabsContent value="password">
+          <Card className="overflow-hidden bg-white border">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b">
+                <tr>
+                  <th className="px-4 py-4 text-left font-bold uppercase text-[11px]">
+                    Nhân viên
+                  </th>
+                  <th className="px-4 py-4 text-left font-bold uppercase text-[11px]">
+                    CCCD
+                  </th>
+                  <th className="px-4 py-4 text-left font-bold uppercase text-[11px]">
+                    Trạng thái
+                  </th>
+                  <th className="px-4 py-4 text-right font-bold uppercase text-[11px]">
+                    Mật khẩu
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedEmployees.map((emp) => (
                   <tr
                     key={emp.id}
-                    onClick={() => handleViewDetails(emp)}
-                    className="border-b hover:bg-muted/50 cursor-pointer transition-colors"
+                    className="border-b transition-colors hover:bg-slate-50/50"
                   >
-                    <td className="px-4 py-3">{emp.name}</td>
+                    <td className="px-4 py-3 font-medium">{emp.fullName}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {emp.employeeCode}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {emp.store}
+                      {emp.citizenIdNumber}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2 justify-end">
+                      <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-2 py-1 rounded">
+                        ĐANG HOẠT ĐỘNG
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {/* Hiển thị Skeleton hoặc Loading khi đang reset */}
+                      {processingId === emp.id ? (
+                        <div className="flex justify-end">
+                          <div className="h-7 w-20 bg-slate-200 animate-pulse rounded" />
+                        </div>
+                      ) : (
                         <Button
                           variant="outline"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClick(emp);
+                          size="sm"
+                          className="h-7 text-[10px] font-bold"
+                          disabled={processingId !== null} // Khóa tất cả các nút reset khác
+                          onClick={() => {
+                            setTargetEmpId(emp.id);
+                            setIsResetDialogOpen(true);
                           }}
-                          className="cursor-pointer bg-transparent"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <RotateCcw className="w-3 h-3 mr-1" /> RESET
                         </Button>
-                        <AlertDialog
-                          open={deleteConfirm === emp.id}
-                          onOpenChange={(open) =>
-                            !open && setDeleteConfirm(null)
-                          }
-                        >
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteConfirm(emp.id);
-                            }}
-                            className="cursor-pointer text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <AlertDialogContent className="cursor-pointer">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Xác nhận xóa nhân viên
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Bạn chắc chắn muốn xóa nhân viên {emp.name} (
-                                {emp.employeeCode})?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <div className="flex gap-3 justify-end">
-                              <AlertDialogCancel className="cursor-pointer">
-                                Hủy
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(emp.id)}
-                                className="cursor-pointer bg-destructive hover:bg-destructive/90"
-                              >
-                                Xóa
-                              </AlertDialogAction>
-                            </div>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Trang {currentPage} / {totalPages} ({filteredEmployees.length} kết
-              quả)
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-            <DialogContent className="cursor-pointer">
-              <DialogHeader>
-                <DialogTitle>Thông tin chi tiết nhân viên</DialogTitle>
-              </DialogHeader>
-              {selectedEmployee && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tên</p>
-                      <p className="font-semibold">{selectedEmployee.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Mã nhân viên
-                      </p>
-                      <p className="font-semibold">
-                        {selectedEmployee.employeeCode}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Chức vụ</p>
-                      <p className="font-semibold">
-                        {selectedEmployee.position}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Cửa hàng</p>
-                      <p className="font-semibold">{selectedEmployee.store}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Số điện thoại
-                      </p>
-                      <p className="font-semibold">{selectedEmployee.phone}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-semibold">{selectedEmployee.email}</p>
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full bg-primary hover:bg-primary/90 cursor-pointer"
-                    onClick={() => handleEditClick(selectedEmployee)}
-                  >
-                    Chỉnh sửa
-                  </Button>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-            <DialogContent className="cursor-pointer">
-              <DialogHeader>
-                <DialogTitle>Chỉnh sửa thông tin nhân viên</DialogTitle>
-              </DialogHeader>
-              {editData && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-muted-foreground">Tên</label>
-                    <Input
-                      value={editData.name}
-                      onChange={(e) =>
-                        setEditData({ ...editData, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">
-                      Mã nhân viên
-                    </label>
-                    <Input
-                      value={editData.employeeCode}
-                      onChange={(e) =>
-                        setEditData({
-                          ...editData,
-                          employeeCode: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">
-                      Chức vụ
-                    </label>
-                    <Input
-                      value={editData.position}
-                      onChange={(e) =>
-                        setEditData({ ...editData, position: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">
-                      Cửa hàng
-                    </label>
-                    <select
-                      value={editData.store}
-                      onChange={(e) =>
-                        setEditData({ ...editData, store: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border rounded-md cursor-pointer"
-                    >
-                      <option>Cửa hàng 1</option>
-                      <option>Cửa hàng 2</option>
-                      <option>Cửa hàng 3</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">
-                      Số điện thoại
-                    </label>
-                    <Input
-                      value={editData.phone}
-                      onChange={(e) =>
-                        setEditData({ ...editData, phone: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">
-                      Email
-                    </label>
-                    <Input
-                      value={editData.email}
-                      onChange={(e) =>
-                        setEditData({ ...editData, email: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      className="flex-1 cursor-pointer bg-transparent"
-                      onClick={() => setIsEditModalOpen(false)}
-                    >
-                      Hủy
-                    </Button>
-                    <Button
-                      className="flex-1 bg-primary hover:bg-primary/90 cursor-pointer"
-                      onClick={handleEditSave}
-                    >
-                      Lưu thay đổi
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+          {/* DIALOG XÁC NHẬN */}
+          <AlertDialog
+            open={isResetDialogOpen}
+            onOpenChange={setIsResetDialogOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-[#658C58]">
+                  Xác nhận Reset mật khẩu?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Hành động này sẽ đặt lại mật khẩu của nhân viên về mặc định:{' '}
+                  <strong className="text-red-500">123456789</strong>. Nhân viên
+                  có thể thay đổi sau khi đăng nhập.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setTargetEmpId(null)}>
+                  Hủy
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-[#658C58] hover:bg-[#658C58]/90"
+                  onClick={() => {
+                    if (targetEmpId) handleConfirmReset(targetEmpId);
+                  }}
+                >
+                  Xác nhận Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
-        <TabsContent value="approvals" className="space-y-4">
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-yellow-600">1</p>
-                  <p className="text-sm text-muted-foreground">Chờ duyệt</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-green-600">1</p>
-                  <p className="text-sm text-muted-foreground">Đã duyệt</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-red-600">0</p>
-                  <p className="text-sm text-muted-foreground">Từ chối</p>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Phân trang */}
+        <div className="flex items-center justify-between mt-4 bg-slate-50 p-2 rounded-lg border">
+          <span className="text-xs font-medium text-muted-foreground ml-2">
+            Hiển thị trang {currentPage} trên tổng {totalPages}
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
-          <p className="text-muted-foreground">
-            Danh sách giải trình sẽ hiển thị tại đây
-          </p>
-        </TabsContent>
-
-        <TabsContent value="password" className="space-y-4">
-          <div className="flex gap-2 items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm theo tên hoặc mã nhân viên..."
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="grid gap-4">
-            {filteredEmployees.map((emp) => (
-              <Card key={emp.id}>
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <p className="font-semibold">{emp.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {emp.employeeCode} | {emp.position} | {emp.store}
-                      </p>
-                    </div>
-                    <Button className="bg-primary hover:bg-primary/90 cursor-pointer">
-                      <Lock className="w-4 h-4 mr-2" />
-                      Đặt lại mật khẩu
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+        </div>
       </Tabs>
+
+      {/* --- DIALOG CHI TIẾT --- */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-xl">
+          {selectedEmployee && (
+            <div className="flex flex-col">
+              <div className="bg-[#658C58] px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3 text-white">
+                  <User className="w-5 h-5" />
+                  <DialogTitle className="text-base font-bold uppercase tracking-tight">
+                    {selectedEmployee.fullName}
+                  </DialogTitle>
+                </div>
+              </div>
+
+              <ScrollArea className="max-h-[60vh]">
+                <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8 bg-white">
+                  <div className="space-y-5">
+                    <h4 className="text-[10px] font-bold text-[#658C58] uppercase border-b pb-1">
+                      Cá nhân
+                    </h4>
+                    <DetailRow
+                      label="Số CCCD"
+                      value={selectedEmployee.citizenIdNumber}
+                    />
+                    <DetailRow
+                      label="Ngày sinh"
+                      value={format(selectedEmployee.dateOfBirth, 'yyyy-MM-dd')}
+                      icon={Calendar}
+                    />
+                    <DetailRow
+                      label="Giới tính"
+                      value={
+                        selectedEmployee.gender === 'female' ? 'Nữ' : 'Nam'
+                      }
+                    />
+                  </div>
+                  <div className="space-y-5">
+                    <h4 className="text-[10px] font-bold text-[#658C58] uppercase border-b pb-1">
+                      Công việc
+                    </h4>
+                    <DetailRow
+                      label="Học vấn"
+                      value={selectedEmployee.university}
+                      icon={GraduationCap}
+                    />
+                    <DetailRow
+                      label="Chuyên ngành"
+                      value={selectedEmployee.major}
+                    />
+                    <DetailRow
+                      label="Cơ sở"
+                      value={`ID: ${selectedEmployee.storeId}`}
+                      icon={Building2}
+                    />
+                  </div>
+                  <div className="space-y-5">
+                    <h4 className="text-[10px] font-bold text-[#658C58] uppercase border-b pb-1">
+                      Liên hệ & TK
+                    </h4>
+                    <DetailRow
+                      label="Ngân hàng"
+                      value={selectedEmployee.bankAccountNumber}
+                      icon={CreditCard}
+                    />
+                    <p className="text-[10px] text-slate-400 -mt-3 font-medium">
+                      {selectedEmployee.bankName}
+                    </p>
+                    <div className="flex gap-2">
+                      <MapPin className="w-4 h-4 text-slate-300 shrink-0" />
+                      <DetailRow
+                        label="Địa chỉ"
+                        value={selectedEmployee.currentAddress}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+              <div className="px-6 py-3 bg-slate-50 border-t flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[11px] font-bold"
+                  onClick={() => setIsDetailModalOpen(false)}
+                >
+                  ĐÓNG
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* --- ALERT DIALOG XÁC NHẬN XÓA --- */}
+      <AlertDialog
+        open={deleteConfirmId !== null}
+        onOpenChange={() => setDeleteConfirmId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="w-5 h-5" /> Xác nhận xóa nhân viên?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này{' '}
+              <strong className="text-slate-900">không thể hoàn tác</strong>.
+              Mọi dữ liệu liên quan đến nhân viên này sẽ bị xóa vĩnh viễn khỏi
+              hệ thống.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {/* <div className="flex justify-end gap-3 mt-4">
+            <AlertDialogCancel className="border-none hover:bg-slate-100">
+              Hủy bỏ
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-white"
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+            >
+              Tôi chắc chắn, hãy xóa
+            </AlertDialogAction>
+          </div> */}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

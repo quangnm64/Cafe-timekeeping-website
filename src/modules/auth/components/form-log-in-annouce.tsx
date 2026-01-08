@@ -40,7 +40,7 @@ export default function AlreadyLogin() {
 
           <Button
             className="w-full h-11 bg-[#658C58] hover:bg-[#31694E] text-white font-bold rounded-xl shadow-lg"
-            onClick={() => router.push('/time-keeping')}
+            onClick={() => router.push('/attendance')}
           >
             Đi tới Dashboard
           </Button>

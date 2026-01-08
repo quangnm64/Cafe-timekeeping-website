@@ -224,19 +224,16 @@ model AttendanceExplanation {
   @@map("attendance_explanations")
 }
 
-enum ApprovalDecision {
-  approved
-  rejected
-}
+
 
 model AttendanceApproval {
   id Int @id @default(autoincrement())
-  explanationId Int
+  explanationId Int @map("explanation_id")
   explanation AttendanceExplanation @relation(fields: [explanationId], references: [id], onDelete: Cascade)
-  approverId Int
+  approverId Int @map("approver_id")
   approver Employee @relation("Approver", fields: [approverId], references: [id])
-  decision ApprovalDecision
-  approvedAt DateTime?
+  decision String @map("decision")
+  approvedAt DateTime? @map("approved_at")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("attendance_explanation_approvals")
